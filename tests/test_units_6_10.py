@@ -26,6 +26,16 @@ def test_apply_requires_explicit_approval(workspace):
     assert result["files_changed"] == 0
     assert (workspace / "incoming" / "report.txt").exists()
 
+def test_apply_and_undo_are_journalled(workspace):
+    result = organizer.apply_plan([{"source":"incoming/report.txt","destination":"Documents/report.txt","approved":True}])
+    assert result["files_changed"] == 1
+    assert (workspace / "Documents" / "report.txt").read_text(encoding="utf-8") == "quarterly report"
+    operation_id = result["completed"][0]["id"]
+    undone = organizer.undo_operation(operation_id)
+    assert undone["restored_path"] == "incoming/report.txt"
+    assert (workspace / "incoming" / "report.txt").exists()
+    assert not (workspace / "Documents" / "report.txt").exists()
+
 def test_duplicate_finder_only_reports_exact_matches(workspace):
     result = organizer.find_duplicates(".")
     assert result["duplicate_files"] == 2
