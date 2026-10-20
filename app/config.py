@@ -1,6 +1,11 @@
 from pathlib import Path
 import os
 PROJECT_ROOT=Path(__file__).resolve().parent.parent
+try:
+ from dotenv import load_dotenv
+ load_dotenv(PROJECT_ROOT/".env")
+except ImportError:
+ pass
 def _path(name,default):
  v=Path(os.getenv(name,default)).expanduser()
  return (PROJECT_ROOT/v).resolve() if not v.is_absolute() else v.resolve()
