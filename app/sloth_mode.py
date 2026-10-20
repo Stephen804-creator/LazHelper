@@ -51,7 +51,7 @@ def run_once():
     prefs = settings()
     inbox = safe_workspace_path(prefs["inbox"])
     result = scan_folder(prefs["inbox"])
-    planned = organizer.build_plan([f["relative_path"] if isinstance(f, dict) else f.relative_path for f in result["files"]])
+    paths = [f.relative_path for f in result["files"]]\n    planned = organizer.build_plan(paths) if paths else {"ready_count": 0, "review_count": 0, "conflict_count": 0}
     # Sloth Mode deliberately prepares a report only. It never applies a plan.
     summary = {
         "ran_at": _now(), "inbox": prefs["inbox"], "files_seen": result["total_files"],
