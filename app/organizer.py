@@ -8,6 +8,7 @@ import hashlib
 import json
 import os
 import sqlite3
+import shutil
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -48,6 +49,32 @@ def _connect():
     return con
 def _now():
     return datetime.now(timezone.utc).isoformat()
+
+def _move_no_overwrite(source: Path, destination: Path):
+    """Copy into an exclusively-created destination, then unlink source.
+
+    Unlike os.replace(), opening with mode 'xb' never overwrites a path that
+    appeared after the preview. If copying fails, remove the partial destination.
+    """
+    created = False
+    try:
+        with source.open("rb") as src, destination.open("xb") as dst:
+            created = True
+            shutil.copyfileobj(src, dst, length=1024 * 1024)
+            dst.flush()
+            os.fsync(dst.fileno())
+        try:
+            shutil.copystat(source, destination, follow_symlinks=False)
+        except OSError:
+            pass
+        source.unlink()
+    except Exception:
+        if created and source.exists():
+            try:
+                destination.unlink(missing_ok=True)
+            except OSError:
+                pass
+        raise
 def get_preferences():
     with _connect() as con:
         rows = {r["key"]: json.loads(r["value"]) for r in con.execute("SELECT key,value FROM preferences")}
@@ -154,7 +181,7 @@ def apply_plan(items: list[dict[str, str]]):
             # Re-check source after directory creation and never overwrite a target.
             if not source.exists() or destination.exists():
                 raise FileExistsError("Source changed or destination appeared during review.")
-            os.replace(source, destination)
+            _move_no_overwrite(source, destination)
             with _connect() as con:
                 cur = con.execute("INSERT INTO operation_journal(action,source_path,destination_path,status,created_at,detail) VALUES(?,?,?,?,?,?)",
                                   ("move", source_rel, destination.relative_to(root).as_posix(), "applied", _now(), "User-approved move"))
@@ -180,7 +207,7 @@ def undo_operation(operation_id: int):
         if source.exists():
             raise FileExistsError("Original path now exists; undo will not overwrite it.")
         source.parent.mkdir(parents=True, exist_ok=True)
-        os.replace(dest, source)
+        _move_no_overwrite(dest, source)
         con.execute("UPDATE operation_journal SET status='undone',undone_at=? WHERE id=?", (_now(), operation_id))
     return {"id": operation_id, "restored_path": source_rel, "files_changed": 1}
 def list_journal(limit: int = 100):
