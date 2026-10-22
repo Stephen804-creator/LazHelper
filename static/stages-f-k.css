@@ -17,3 +17,7 @@
 .fk-result ul { padding-left:1.25rem; }
 #fk-status.error { color:#a24432; }
 @media(max-width:560px){.fk-grid,.fk-output{grid-template-columns:1fr}.fk-panel{padding:.8rem}}
+
+.fk-workflow-row { border-top:1px solid var(--line,#e4e1d7); padding:.7rem 0; }
+.fk-workflow-row p { margin:.35rem 0; overflow-wrap:anywhere; }
+.fk-workflow-row button { margin:.2rem .35rem .2rem 0; }
