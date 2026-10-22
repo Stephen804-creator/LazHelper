@@ -187,6 +187,7 @@ The suite includes tests for scanning and path confinement, organisation safegua
 - `docs/units-6-10.md` — review-first organisation, duplicates, queue, journal, and preferences.
 - `docs/units-11-13.md` — Sloth Mode, workspace insights, and operational boundaries.
 - `docs/stages-a-e.md` — workspace relationships, duplicate/version hints, search, knowledge map, and health reports.
+- `docs/stages-f-k.md` — recovery export, project profiles, ZIP inspection, command previews, local evidence retrieval, and read-only workflows.
 - `/docs` — interactive API documentation when the local server is running.
 
 ## Contributing
