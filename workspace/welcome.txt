@@ -1,0 +1,4 @@
+Welcome to your LazyDesk sample workspace.
+
+Scan this folder, then inspect sample.csv to see the spreadsheet preview.
+LazyDesk will not move, rename, overwrite, or delete these files.
