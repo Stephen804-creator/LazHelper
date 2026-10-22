@@ -1,4 +1,4 @@
-name: LazyDesk tests
+name: LazHelper tests
 on:
   pull_request:
   push:
