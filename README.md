@@ -27,7 +27,7 @@ LazHelper is designed to keep the user in control. Recommendations and plans are
 - Keep a local operation journal and support undo when the original path is available.
 - Store personal category preferences locally.
 
-### Sloth Mode and workspace insights
+### Workspace intelligence (Stages A–E)\n- Find explainable candidate relationships between files using shared filename terms, folder context, and likely version suffixes.\n- Combine exact SHA-256 duplicate detection with cautious filename-version families and bounded text-similarity hints.\n- Search filenames and supported extracted content locally, with short evidence snippets.\n- Build a lightweight knowledge graph of folder/file nodes and candidate relationship edges.\n- Generate a workspace health checklist for generic names, large or unsupported files, old files, crowded folders, and repeated naming patterns.\n- Keep all suggestions read-only: no automatic renaming, merging, moving, or deletion. Content search and similarity inspection stay local and do not send data to an AI provider.\n\n### Sloth Mode and workspace insights
 - Enable **Sloth Mode** to review a chosen inbox on a configurable schedule.
 - See a summary of files ready for review, uncertain items, and conflicts.
 - Keep Sloth Mode disabled by default; scheduled reviews do not move or delete files.
@@ -51,7 +51,7 @@ This development line contains work for Units 1–13:
 | 10 | Local preferences and category rules |
 | 11 | Opt-in Sloth Mode |
 | 12 | Digital Workspace Insights |
-| 13 | Testing, security, and recovery work |
+| 13 | Testing, security, and recovery work |\n| A | Intelligent file relationships |\n| B | Duplicate and version insights |\n| C | Unified content-aware search |\n| D | Workspace knowledge map |\n| E | Workspace health reports |
 
 These features are under development. Check the linked pull requests and their CI results before treating the development line as release-ready. Unit 14, final packaging and release handoff, is not represented as complete here.
 
@@ -157,7 +157,7 @@ The suite includes tests for scanning and path confinement, organisation safegua
 ## Documentation
 
 - `docs/units-6-10.md` — review-first organisation, duplicates, queue, journal, and preferences.
-- `docs/units-11-13.md` — Sloth Mode, workspace insights, and operational boundaries.
+- `docs/units-11-13.md` — Sloth Mode, workspace insights, and operational boundaries.\n- `docs/stages-a-e.md` — workspace relationships, duplicate/version hints, search, knowledge map, and health reports.
 - `/docs` — interactive API documentation when the local server is running.
 
 ## Contributing
