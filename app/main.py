@@ -13,7 +13,7 @@ from .models import ScanRequest, AnalyzeRequest
 from .scanner import scan_folder, safe_file_path, UnsafePath
 from .extractor import extract_file
 from .ai_engine import recommend, AIUnavailable
-from . import organizer, sloth_mode, insights
+from . import organizer, sloth_mode, insights, workspace_intelligence
 
 STATIC = Path(__file__).resolve().parent.parent / "static"
 
@@ -225,3 +225,48 @@ async def get_insights(relative_path: str = "."):
         raise HTTPException(404, str(exc)) from exc
     except (ValueError, OSError) as exc:
         raise HTTPException(422, str(exc)) from exc
+
+# Stages A–E: explainable workspace intelligence. All endpoints are read-only.
+async def _run_intelligence(function, *args):
+    try:
+        return await asyncio.to_thread(function, *args)
+    except UnsafePath as exc:
+        raise HTTPException(400, str(exc)) from exc
+    except FileNotFoundError as exc:
+        raise HTTPException(404, str(exc)) from exc
+    except (ValueError, OSError) as exc:
+        raise HTTPException(422, str(exc)) from exc
+
+
+@app.get("/api/relationships")
+async def get_relationships(relative_path: str = ".", max_files: int = 400):
+    if not 1 <= max_files <= 1000:
+        raise HTTPException(422, "max_files must be between 1 and 1000.")
+    return await _run_intelligence(workspace_intelligence.file_relationships, relative_path, max_files)
+
+
+@app.post("/api/duplicates/insights")
+async def get_duplicate_insights(req: DuplicateRequest):
+    return await _run_intelligence(workspace_intelligence.duplicate_insights, req.relative_path)
+
+
+@app.get("/api/search")
+async def search_workspace(query: str = "", relative_path: str = ".", max_results: int = 50):
+    if not 1 <= max_results <= 100:
+        raise HTTPException(422, "max_results must be between 1 and 100.")
+    return await _run_intelligence(workspace_intelligence.content_search, query, relative_path, max_results)
+
+
+@app.get("/api/knowledge-map")
+async def get_knowledge_map(relative_path: str = ".", max_files: int = 250):
+    if not 1 <= max_files <= 1000:
+        raise HTTPException(422, "max_files must be between 1 and 1000.")
+    return await _run_intelligence(workspace_intelligence.knowledge_map, relative_path, max_files)
+
+
+@app.get("/api/health-report")
+async def get_workspace_health_report(relative_path: str = ".", max_files: int = 500):
+    if not 1 <= max_files <= 1000:
+        raise HTTPException(422, "max_files must be between 1 and 1000.")
+    return await _run_intelligence(workspace_intelligence.workspace_health_report, relative_path, max_files)
+

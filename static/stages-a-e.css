@@ -1,0 +1,17 @@
+.intelligence-card { margin-top: 1.5rem; }
+.intelligence-card > h2 { margin: .2rem 0 .6rem; }
+.intelligence-search { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .55rem .8rem; align-items: end; margin: 1.2rem 0; }
+.intelligence-search label { grid-column: 1 / -1; font-weight: 600; }
+.intelligence-search input { min-width: 0; width: 100%; }
+.intelligence-search button, .intelligence-actions button { min-height: 42px; }
+.intelligence-actions { display: flex; flex-wrap: wrap; gap: .6rem; }
+.intelligence-actions button { cursor: pointer; }
+.intelligence-actions button:disabled, .intelligence-search button:disabled { opacity: .6; cursor: wait; }
+.intelligence-results { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: .8rem; margin-top: 1rem; }
+.intelligence-result-card { min-width: 0; border: 1px solid var(--line, #e4e1d7); border-radius: 12px; padding: 1rem; background: rgba(255,255,255,.55); }
+.intelligence-result-card h3 { margin: 0 0 .5rem; overflow-wrap: anywhere; }
+.intelligence-result-card p { line-height: 1.55; }
+.intelligence-result-card ul { margin: .6rem 0 0; padding-left: 1.25rem; }
+.intelligence-result-card li { margin: .45rem 0; overflow-wrap: anywhere; line-height: 1.45; }
+#intelligence-status.error { color: #a24432; }
+@media (max-width: 560px) { .intelligence-search { grid-template-columns: 1fr; } .intelligence-search label { grid-column: auto; } .intelligence-actions { display: grid; grid-template-columns: 1fr; } }
