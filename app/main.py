@@ -13,7 +13,7 @@ from .models import ScanRequest, AnalyzeRequest
 from .scanner import scan_folder, safe_file_path, UnsafePath
 from .extractor import extract_file
 from .ai_engine import recommend, AIUnavailable
-from . import organizer, sloth_mode, insights, workspace_intelligence
+from . import organizer, sloth_mode, insights, workspace_intelligence, extended_workspace
 
 STATIC = Path(__file__).resolve().parent.parent / "static"
 
@@ -190,6 +190,45 @@ class SlothSettingsRequest(BaseModel):
 class InsightsRequest(BaseModel):
     relative_path: str = "."
 
+class ArchiveInspectRequest(BaseModel):
+    relative_path: str = Field(min_length=1, max_length=500)
+    max_entries: int = Field(default=500, ge=1, le=1000)
+    preview_text: bool = False
+
+class ProjectWorkspaceRequest(BaseModel):
+    name: str = Field(min_length=1, max_length=100)
+    kind: str = "study"
+    description: str = Field(default="", max_length=1000)
+    folder_path: str = Field(default=".", max_length=500)
+    tags: list[str] = Field(default_factory=list, max_length=30)
+    structure: list[str] = Field(default_factory=list, max_length=30)
+
+class ProjectWorkspaceUpdate(BaseModel):
+    name: str | None = Field(default=None, max_length=100)
+    kind: str | None = None
+    description: str | None = Field(default=None, max_length=1000)
+    folder_path: str | None = Field(default=None, max_length=500)
+    tags: list[str] | None = Field(default=None, max_length=30)
+    structure: list[str] | None = Field(default=None, max_length=30)
+
+class CommandPreviewRequest(BaseModel):
+    command: str = Field(min_length=1, max_length=500)
+    relative_path: str = Field(default=".", max_length=500)
+
+class KnowledgeQuestionRequest(BaseModel):
+    question: str = Field(min_length=1, max_length=500)
+    relative_path: str = Field(default=".", max_length=500)
+    max_sources: int = Field(default=5, ge=1, le=10)
+
+class WorkflowStep(BaseModel):
+    action: str
+    parameters: dict = Field(default_factory=dict)
+
+class WorkflowCreateRequest(BaseModel):
+    name: str = Field(min_length=1, max_length=100)
+    description: str = Field(default="", max_length=500)
+    steps: list[WorkflowStep] = Field(min_length=1, max_length=10)
+
 @app.get("/api/sloth-mode")
 async def get_sloth_mode():
     return sloth_mode.settings()
@@ -269,4 +308,151 @@ async def get_workspace_health_report(relative_path: str = ".", max_files: int =
     if not 1 <= max_files <= 1000:
         raise HTTPException(422, "max_files must be between 1 and 1000.")
     return await _run_intelligence(workspace_intelligence.workspace_health_report, relative_path, max_files)
+
+# Stage F — recovery visibility and portable journal export.
+@app.get("/api/recovery/history")
+async def recovery_history(limit: int = 100, export_format: str = "json"):
+    if not 1 <= limit <= 200:
+        raise HTTPException(422, "limit must be between 1 and 200.")
+    try:
+        return extended_workspace.recovery_history(limit, export_format)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+
+@app.get("/api/recovery/inspect/{operation_id}")
+async def recovery_inspect(operation_id: int):
+    try:
+        return extended_workspace.inspect_recovery(operation_id)
+    except ValueError as exc:
+        raise HTTPException(404, str(exc)) from exc
+
+# Stage G — project/study workspace profiles. These save metadata only.
+@app.get("/api/projects")
+async def list_project_workspaces():
+    return extended_workspace.list_projects()
+
+@app.post("/api/projects")
+async def create_project_workspace(req: ProjectWorkspaceRequest):
+    try:
+        return await asyncio.to_thread(extended_workspace.create_project, req.model_dump())
+    except UnsafePath as exc:
+        raise HTTPException(400, str(exc)) from exc
+    except FileNotFoundError as exc:
+        raise HTTPException(404, str(exc)) from exc
+    except (ValueError, OSError) as exc:
+        raise HTTPException(422, str(exc)) from exc
+
+@app.get("/api/projects/{project_id}")
+async def get_project_workspace(project_id: int):
+    try:
+        return extended_workspace.get_project(project_id)
+    except ValueError as exc:
+        raise HTTPException(404, str(exc)) from exc
+
+@app.get("/api/projects/{project_id}/overview")
+async def project_workspace_overview(project_id: int):
+    try:
+        return await asyncio.to_thread(extended_workspace.project_overview, project_id)
+    except ValueError as exc:
+        raise HTTPException(404, str(exc)) from exc
+    except UnsafePath as exc:
+        raise HTTPException(400, str(exc)) from exc
+    except FileNotFoundError as exc:
+        raise HTTPException(404, str(exc)) from exc
+
+@app.put("/api/projects/{project_id}")
+async def update_project_workspace(project_id: int, req: ProjectWorkspaceUpdate):
+    try:
+        payload = req.model_dump(exclude_none=True)
+        return await asyncio.to_thread(extended_workspace.update_project, project_id, payload)
+    except UnsafePath as exc:
+        raise HTTPException(400, str(exc)) from exc
+    except FileNotFoundError as exc:
+        raise HTTPException(404, str(exc)) from exc
+    except (ValueError, OSError) as exc:
+        raise HTTPException(422, str(exc)) from exc
+
+@app.delete("/api/projects/{project_id}")
+async def delete_project_workspace(project_id: int):
+    try:
+        return extended_workspace.delete_project(project_id)
+    except ValueError as exc:
+        raise HTTPException(404, str(exc)) from exc
+
+# Stage H — bounded ZIP inventory; never extracts.
+@app.post("/api/archive/inspect")
+async def inspect_archive(req: ArchiveInspectRequest):
+    try:
+        return await asyncio.to_thread(extended_workspace.inspect_archive, req.relative_path, req.max_entries, req.preview_text)
+    except UnsafePath as exc:
+        raise HTTPException(400, str(exc)) from exc
+    except FileNotFoundError as exc:
+        raise HTTPException(404, str(exc)) from exc
+    except (ValueError, OSError, zipfile.BadZipFile) as exc:
+        raise HTTPException(422, str(exc)) from exc
+
+# Stage I — translate plain-language requests into safe, reviewable proposals.
+@app.post("/api/commands/preview")
+async def preview_workspace_command(req: CommandPreviewRequest):
+    try:
+        return extended_workspace.preview_command(req.command, req.relative_path)
+    except UnsafePath as exc:
+        raise HTTPException(400, str(exc)) from exc
+    except FileNotFoundError as exc:
+        raise HTTPException(404, str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+
+# Stage J — local evidence retrieval, not a general-purpose or cloud chatbot.
+@app.post("/api/knowledge/ask")
+async def ask_workspace_knowledge(req: KnowledgeQuestionRequest):
+    try:
+        return await asyncio.to_thread(extended_workspace.ask_local_knowledge, req.question, req.relative_path, req.max_sources)
+    except UnsafePath as exc:
+        raise HTTPException(400, str(exc)) from exc
+    except FileNotFoundError as exc:
+        raise HTTPException(404, str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+
+# Stage K — reusable, explicitly read-only workflows.
+@app.get("/api/workflows")
+async def list_saved_workflows():
+    return extended_workspace.list_workflows()
+
+@app.post("/api/workflows")
+async def create_saved_workflow(req: WorkflowCreateRequest):
+    try:
+        return extended_workspace.create_workflow(req.model_dump())
+    except UnsafePath as exc:
+        raise HTTPException(400, str(exc)) from exc
+    except FileNotFoundError as exc:
+        raise HTTPException(404, str(exc)) from exc
+    except (ValueError, OSError) as exc:
+        raise HTTPException(422, str(exc)) from exc
+
+@app.get("/api/workflows/{workflow_id}")
+async def get_saved_workflow(workflow_id: int):
+    try:
+        return extended_workspace.get_workflow(workflow_id)
+    except ValueError as exc:
+        raise HTTPException(404, str(exc)) from exc
+
+@app.post("/api/workflows/{workflow_id}/run")
+async def run_saved_workflow(workflow_id: int):
+    try:
+        return await asyncio.to_thread(extended_workspace.run_workflow, workflow_id)
+    except UnsafePath as exc:
+        raise HTTPException(400, str(exc)) from exc
+    except FileNotFoundError as exc:
+        raise HTTPException(404, str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+
+@app.delete("/api/workflows/{workflow_id}")
+async def delete_saved_workflow(workflow_id: int):
+    try:
+        return extended_workspace.delete_workflow(workflow_id)
+    except ValueError as exc:
+        raise HTTPException(404, str(exc)) from exc
 
