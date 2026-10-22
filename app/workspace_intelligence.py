@@ -53,7 +53,8 @@ def _extract_text(relative_path: str) -> tuple[str, str | None]:
         if result.get("kind") not in _TEXT_KINDS:
             return "", None
         return str(result.get("text") or "")[:config.MAX_TEXT_CHARS], None
-    except (ValueError, OSError, ImportError, RuntimeError) as exc:
+    except Exception as exc:
+        # Malformed or unsupported documents should not abort the whole workspace scan.
         return "", str(exc)[:180]
 
 
@@ -138,16 +139,20 @@ def duplicate_insights(relative_path: str = ".", max_files: int = 250) -> dict[s
     text_items: list[tuple[dict[str, Any], set[str]]] = []
     errors = []
     checked = 0
+    bytes_hashed = 0
+    hash_budget = 512 * 1024 * 1024
     for item in files:
         try:
             path = safe_file_path(item["relative_path"])
-            if path.stat().st_size > config.MAX_FILE_BYTES:
+            size_bytes = path.stat().st_size
+            if size_bytes > config.MAX_FILE_BYTES or bytes_hashed + size_bytes > hash_budget:
                 continue
             digest = hashlib.sha256()
             with path.open("rb") as stream:
                 for chunk in iter(lambda: stream.read(1024 * 1024), b""):
                     digest.update(chunk)
-            exact[digest.hexdigest()].append({"path": item["relative_path"], "size_bytes": path.stat().st_size})
+            exact[digest.hexdigest()].append({"path": item["relative_path"], "size_bytes": size_bytes})
+            bytes_hashed += size_bytes
             stem = _normalized_stem(path.name)
             if stem:
                 versions[stem].append({"path": item["relative_path"], "name": path.name, "extension": path.suffix.casefold(), "size_bytes": path.stat().st_size})
