@@ -363,7 +363,9 @@ def ask_local_knowledge(question: str, relative_path: str = ".", max_sources: in
             seen.add(key)
     sources = unique[:max(1, min(max_sources, 10))]
     if sources:
-        answer = "I found these relevant passages in your local workspace. They are evidence to help answer your question, not a guarantee that the documents contain the complete answer."
+        answer = "Based on your local documents, the most relevant evidence is: " + " ".join(
+            f'“{source["evidence"]}” (source: {source["path"]}).' for source in sources[:3]
+        ) + " This is extractive evidence, not a guarantee that the documents contain the complete answer."
     else:
         answer = "I couldn't find a sufficiently relevant passage in the selected workspace. Try different keywords or choose another folder."
     return {"question": question, "answer": answer, "sources": sources, "source_count": len(sources),
