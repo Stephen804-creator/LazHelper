@@ -1,46 +1,169 @@
 # LazyDesk 🦥
 
-**Your files are a mess. Let AI do the boring part.**
+**A calmer way to understand, organise, and recover your digital workspace.**
 
-LazHelper is being developed as **LazyDesk**, a local-first file-understanding assistant. Its workflow is **Scan → Understand → Recommend → Review → Organise → Undo**.
+LazyDesk is a local-first, open-source file-understanding assistant being developed in the `LazHelper` repository. It helps you inspect files, understand their formats and contents, prepare organisation suggestions, review uncertain items, find exact duplicates, and undo supported moves.
 
-## Units 1–5 implemented in this branch
+Its guiding workflow is:
 
-1. **Product specification and architecture** — scope, acceptance criteria, data flow, and security boundary.
-2. **Project foundation and UI** — FastAPI app and responsive browser dashboard.
-3. **Safe file scanner** — configured workspace only, relative paths, symlink skipping, bounded scan depth/count, no file modifications.
-4. **Content understanding** — PDF, DOCX, TXT, Markdown, RTF, CSV, legacy XLS, XLSX, PPTX, image metadata, source/text files, and ZIP inventory.
-5. **Local AI adapter** — optional Ollama integration, structured Pydantic output, filename/category sanitisation, and mandatory human review.
+**Scan → Understand → Recommend → Review → Organise → Undo**
+
+LazyDesk is designed to keep the user in control. Recommendations and plans are previews—not permission to change files.
+
+## Current capabilities
+
+### Inspect and understand files
+- Scan a configured workspace with limits on scan depth, file count, and file size.
+- Extract content or metadata from supported formats, including PDF, DOCX, TXT, Markdown, RTF, CSV, XLS, XLSX, PPTX, common image formats, source code, structured text, and ZIP inventories.
+- Generate optional local AI recommendations through Ollama.
+- Continue scanning and extracting when Ollama is unavailable.
+
+### Organise with review and recovery
+- Preview proposed destinations using configurable file-category rules.
+- Require explicit approval for each move.
+- Refuse destination collisions rather than silently overwrite files.
+- Detect exact, byte-for-byte duplicates using SHA-256.
+- Place uncertain files in a persistent **Not Sure** review queue.
+- Keep a local operation journal and support undo when the original path is available.
+- Store personal category preferences locally.
+
+### Sloth Mode and workspace insights
+- Enable **Sloth Mode** to review a chosen inbox on a configurable schedule.
+- See a summary of files ready for review, uncertain items, and conflicts.
+- Keep Sloth Mode disabled by default; scheduled reviews do not move or delete files.
+- View metadata-only workspace insights: file counts, extensions, folder summaries, total size, and largest files.
+
+## Project status
+
+This development line contains work for Units 1–13:
+
+| Unit | Focus |
+| --- | --- |
+| 1 | Product specification and architecture |
+| 2 | FastAPI foundation and responsive dashboard |
+| 3 | Bounded, workspace-confined file scanner |
+| 4 | File content extraction and format understanding |
+| 5 | Optional local AI integration |
+| 6 | Review-first organisation plans |
+| 7 | Exact duplicate discovery |
+| 8 | Not Sure review queue |
+| 9 | Operation journal and undo |
+| 10 | Local preferences and category rules |
+| 11 | Opt-in Sloth Mode |
+| 12 | Digital Workspace Insights |
+| 13 | Testing, security, and recovery work |
+
+These features are under development. Check the linked pull requests and their CI results before treating the development line as release-ready. Unit 14, final packaging and release handoff, is not represented as complete here.
+
+## Requirements
+
+- Python 3.11 or newer
+- A supported operating system for Python and the required packages
+- Ollama only if you want local AI recommendations
 
 ## Run locally
 
-Requires Python 3.11+.
+Clone the repository and enter its directory:
 
 ```bash
-python -m venv .venv
-# Windows PowerShell: .venv\Scripts\Activate.ps1
-# macOS/Linux: source .venv/bin/activate
-pip install -r requirements.txt
+git clone https://github.com/Stephen804-creator/LazHelper.git
+cd LazHelper
 ```
 
-Copy `.env.example` to `.env`, then run:
+Create and activate a virtual environment.
+
+**Windows PowerShell**
+```powershell
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+```
+
+**macOS / Linux**
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+Install dependencies:
+
+```bash
+python -m pip install -r requirements.txt
+```
+
+Copy `.env.example` to `.env` and adjust the settings if needed. Then start the app:
 
 ```bash
 uvicorn app.main:app --reload
 ```
 
-Open http://127.0.0.1:8000. Sample files are in `workspace/`. To scan a different folder, set `LAZYDESK_ALLOWED_ROOT` in your environment to that specific folder and restart the app. The API only accepts relative paths inside that configured root. Do not expose this development server to the public internet.
+Open **http://127.0.0.1:8000** in your browser. API documentation is available at **http://127.0.0.1:8000/docs** while the server is running. Sample workspace files are provided in `workspace/`.
 
-## Optional AI
+To work with a different folder, set `LAZYDESK_ALLOWED_ROOT` to that folder in `.env` and restart the application. Use a folder you are comfortable allowing LazyDesk to inspect and, only after approval, organise.
 
-Install Ollama separately, pull a model you are licensed and equipped to use (for example, `ollama pull gemma3:1b`), then configure `LAZYDESK_OLLAMA_MODEL`. Model licensing is separate from this repository's MIT licence. LazyDesk does not download models automatically. Scanning and extraction work when Ollama is unavailable.
+## Configuration
 
-## Units 6–10: review-first organisation\n\nThe `build/units-6-10` branch adds a separate organisation preview, exact SHA-256 duplicate discovery, a persistent “Not Sure” queue, a local operation journal with undo, and editable local category preferences. The preview is non-mutating; each move needs its own approval. Existing destination paths are refused, and there is no delete endpoint. Successful moves can be undone only when the original path is free. State is stored in `.lazydesk_state.sqlite3` in the project directory. See `docs/units-6-10.md` for the scope and safety contract.\n\n## Units 6–10: review-first organisation\n\nThe `build/units-6-10` branch adds an organisation preview, exact SHA-256 duplicate discovery, a persistent “Not Sure” queue, a local operation journal with undo, and editable local category preferences. Planning is non-mutating; each move needs its own approval. Existing destination paths are refused, and there is no delete endpoint. Undo is available only when the original path is free. State is stored in `.lazydesk_state.sqlite3` in the project directory. See `docs/units-6-10.md` for the scope and safety contract.\n\n## Units 11–13: Sloth Mode, insights, and recovery tests\n\nThe `build/units-11-13` branch adds opt-in Sloth Mode for scheduled inbox review, a metadata-only Digital Mess Map, and additional security/recovery tests. Sloth Mode is off by default and only prepares review summaries; it does not move files in the background. Its schedule runs only while the local app is running. Workspace insights use filenames, extensions and sizes, not document content. See `docs/units-11-13.md`.\n\n## Safety boundary
+The main environment settings are:
 
-Scanning, extraction, and planning are read-only. Units 6–10 add explicit user-approved moves and undo; LazyDesk never deletes files and refuses known destination collisions. It does not execute source code or extract ZIP archives. Image OCR is not enabled yet; images provide metadata only. File, page, row, text, and archive limits apply. Keep the app on loopback and review all AI recommendations.
+| Variable | Purpose | Default |
+| --- | --- | --- |
+| `LAZYDESK_ALLOWED_ROOT` | Workspace LazyDesk is allowed to access | `./workspace` |
+| `LAZYDESK_MAX_FILES` | Maximum number of files in a scan | `1500` |
+| `LAZYDESK_MAX_DEPTH` | Maximum directory traversal depth | `8` |
+| `LAZYDESK_MAX_FILE_MB` | Maximum file size in MB for supported processing | `20` |
+| `LAZYDESK_MAX_TEXT_CHARS` | Maximum extracted text passed through the processing pipeline | `18000` |
+| `LAZYDESK_OLLAMA_URL` | Local Ollama service URL | `http://127.0.0.1:11434` |
+| `LAZYDESK_OLLAMA_MODEL` | Ollama model name | `gemma3:1b` |
+| `LAZYDESK_AI_TIMEOUT_SECONDS` | AI request timeout | `45` |
+
+Limits are bounded by the application. Values above the supported maximum are capped.
+
+## Optional local AI with Ollama
+
+AI recommendations are optional. Install and start Ollama separately, then pull a model supported by your device and whose licence suits your use. For example:
+
+```bash
+ollama pull gemma3:1b
+```
+
+Set `LAZYDESK_OLLAMA_MODEL` in `.env` to the model you installed. LazyDesk does not automatically download models. Model requirements and licences are separate from the licence for this repository. Without a working Ollama service, file scanning and supported content extraction can still be used.
+
+## Safety and privacy
+
+LazyDesk is designed around local processing and explicit user control, but it is still development software.
+
+- **Workspace boundary:** file paths must remain inside the configured workspace; symlinks are skipped or rejected.
+- **Review before action:** organisation plans do not change files. Moves require explicit approval.
+- **No automatic deletion:** duplicate discovery reports matches; it does not remove them.
+- **No silent overwrite:** known or newly appearing destination collisions are refused.
+- **Undo has conditions:** a move can be undone only if the original path is still available.
+- **Sloth Mode is review-only:** scheduled runs prepare summaries; they do not apply moves.
+- **Metadata-only insights:** workspace insights use file paths/names, extensions, and sizes rather than uploading file contents.
+- **Local AI:** when enabled, extracted content used for a recommendation is sent to the configured Ollama service. Review what you process and configure the service appropriately.
+- **Processing limits:** size, depth, text, and file-count limits help constrain resource use.
+- **No public deployment by default:** the app does not provide authentication. Keep it bound to loopback and do not expose the development server directly to the internet.
+
+Image OCR is not currently enabled; images are represented by metadata. ZIP files are inventoried rather than extracted, and source files are treated as text rather than executed.
 
 ## Tests
 
-Run `pytest -q`. The current tests cover path traversal, workspace confinement, read-only scanning, and recommendation sanitisation.
+Install the project dependencies, then run:
 
-Inbox automation and additional personalisation remain later roadmap units.
+```bash
+python -m pytest -q
+```
+
+The suite includes tests for scanning and path confinement, organisation safeguards, Sloth Mode behaviour, workspace insights, and recovery-related cases. Check the latest GitHub Actions result for the branch or pull request you intend to use; the existence of tests does not by itself mean they have passed.
+
+## Documentation
+
+- `docs/units-6-10.md` — review-first organisation, duplicates, queue, journal, and preferences.
+- `docs/units-11-13.md` — Sloth Mode, workspace insights, and operational boundaries.
+- `/docs` — interactive API documentation when the local server is running.
+
+## Contributing
+
+Issues, bug reports, test improvements, and focused pull requests are welcome. For changes that touch file operations, preserve the core contract: stay inside the configured workspace, show a preview, require explicit approval for moves, refuse overwrites, and never delete user files automatically.
+
+## Project name
+
+The GitHub repository is named **LazHelper**; the application is being developed as **LazyDesk**.
