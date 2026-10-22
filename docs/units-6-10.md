@@ -1,4 +1,4 @@
-# LazyDesk Units 6–10
+# LazHelper Units 6–10
 
 ## Unit 6 — Review-first organisation
 Build a proposed destination for each selected file using editable category rules. The plan is a preview; only explicitly approved items can be applied. Destination collisions are rejected and files are never overwritten. The organiser is confined to the configured workspace.
