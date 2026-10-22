@@ -35,7 +35,7 @@ LazHelper is designed to keep the user in control. Recommendations and plans are
 
 ## Project status
 
-This development line contains Units 1–13 plus workspace-intelligence Stages A–E:
+This development line contains Units 1–13 plus workspace-intelligence Stages A–K:
 
 | Unit | Focus |
 | --- | --- |
@@ -56,9 +56,9 @@ This development line contains Units 1–13 plus workspace-intelligence Stages A
 | B | Duplicate and version insights |
 | C | Unified content-aware search |
 | D | Workspace knowledge map |
-| E | Workspace health reports |
+| E | Workspace health reports |\n| F | Recovery visibility and journal export |\n| G | Project and study workspace profiles |\n| H | Safe ZIP archive inspection |\n| I | Natural-language command previews |\n| J | Local document evidence retrieval |\n| K | Reusable read-only workflows |
 
-These features are under development. Check the linked pull requests and their CI results before treating the development line as release-ready. Unit 14, final packaging and release handoff, is not represented as complete here.
+These features are under development. Check the linked pull requests and their CI results before treating the development line as release-ready. Stages F–K do not automatically create folders, extract archives, execute shell commands, or mutate files. Unit 14, final packaging and release handoff, is not represented as complete here.
 
 ## Requirements
 
