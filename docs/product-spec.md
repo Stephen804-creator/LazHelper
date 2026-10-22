@@ -1,6 +1,6 @@
 # Unit 1 — Product specification
 ## Promise
-LazyDesk helps people understand cluttered folders and makes safe, reviewable recommendations without taking control away from the user.
+LazHelper helps people understand cluttered folders and makes safe, reviewable recommendations without taking control away from the user.
 ## Workflow
 Scan → Understand → Recommend → Review → Organise → Undo. Units 1–5 deliver the first four stages as a read-only foundation.
 ## Users
