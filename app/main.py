@@ -34,7 +34,7 @@ async def lifespan(app):
             pass
 
 app = FastAPI(
-    title="LazyDesk",
+    title="LazHelper",
     version="0.2.0",
     description="Local-first file understanding assistant with review-first organisation",
     lifespan=lifespan,
@@ -71,7 +71,7 @@ async def home():
 
 @app.get("/api/health")
 async def health():
-    return {"status": "ok", "app": "LazyDesk", "read_only": False,
+    return {"status": "ok", "app": "LazHelper", "read_only": False,
             "safety": "Moves require explicit approval; no delete endpoint exists."}
 
 @app.get("/api/config")
