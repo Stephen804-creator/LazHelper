@@ -98,7 +98,7 @@ uvicorn app.main:app --reload
 
 Open **http://127.0.0.1:8000** in your browser. API documentation is available at **http://127.0.0.1:8000/docs** while the server is running. Sample workspace files are provided in `workspace/`.
 
-To work with a different folder, set `LAZYHELPER_ALLOWED_ROOT` to that folder in `.env` and restart the application. Use a folder you are comfortable allowing LazHelper to inspect and, only after approval, organise.
+To work with a different folder, set `LAZHELPER_ALLOWED_ROOT` to that folder in `.env` and restart the application. Use a folder you are comfortable allowing LazHelper to inspect and, only after approval, organise.
 
 ## Configuration
 
@@ -106,14 +106,14 @@ The main environment settings are:
 
 | Variable | Purpose | Default |
 | --- | --- | --- |
-| `LAZYHELPER_ALLOWED_ROOT` | Workspace LazHelper is allowed to access | `./workspace` |
-| `LAZYHELPER_MAX_FILES` | Maximum number of files in a scan | `1500` |
-| `LAZYHELPER_MAX_DEPTH` | Maximum directory traversal depth | `8` |
-| `LAZYHELPER_MAX_FILE_MB` | Maximum file size in MB for supported processing | `20` |
-| `LAZYHELPER_MAX_TEXT_CHARS` | Maximum extracted text passed through the processing pipeline | `18000` |
-| `LAZYHELPER_OLLAMA_URL` | Local Ollama service URL | `http://127.0.0.1:11434` |
-| `LAZYHELPER_OLLAMA_MODEL` | Ollama model name | `gemma3:1b` |
-| `LAZYHELPER_AI_TIMEOUT_SECONDS` | AI request timeout | `45` |
+| `LAZHELPER_ALLOWED_ROOT` | Workspace LazHelper is allowed to access | `./workspace` |
+| `LAZHELPER_MAX_FILES` | Maximum number of files in a scan | `1500` |
+| `LAZHELPER_MAX_DEPTH` | Maximum directory traversal depth | `8` |
+| `LAZHELPER_MAX_FILE_MB` | Maximum file size in MB for supported processing | `20` |
+| `LAZHELPER_MAX_TEXT_CHARS` | Maximum extracted text passed through the processing pipeline | `18000` |
+| `LAZHELPER_OLLAMA_URL` | Local Ollama service URL | `http://127.0.0.1:11434` |
+| `LAZHELPER_OLLAMA_MODEL` | Ollama model name | `gemma3:1b` |
+| `LAZHELPER_AI_TIMEOUT_SECONDS` | AI request timeout | `45` |
 
 Limits are bounded by the application. Values above the supported maximum are capped.
 
@@ -125,7 +125,7 @@ AI recommendations are optional. Install and start Ollama separately, then pull 
 ollama pull gemma3:1b
 ```
 
-Set `LAZYHELPER_OLLAMA_MODEL` in `.env` to the model you installed. LazHelper does not automatically download models. Model requirements and licences are separate from the licence for this repository. Without a working Ollama service, file scanning and supported content extraction can still be used.
+Set `LAZHELPER_OLLAMA_MODEL` in `.env` to the model you installed. LazHelper does not automatically download models. Model requirements and licences are separate from the licence for this repository. Without a working Ollama service, file scanning and supported content extraction can still be used.
 
 ## Safety and privacy
 
