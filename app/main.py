@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager
+import asyncio
 from pathlib import Path
 import zipfile
 
@@ -12,14 +13,25 @@ from .models import ScanRequest, AnalyzeRequest
 from .scanner import scan_folder, safe_file_path, UnsafePath
 from .extractor import extract_file
 from .ai_engine import recommend, AIUnavailable
-from . import organizer
+from . import organizer, sloth_mode, insights
 
 STATIC = Path(__file__).resolve().parent.parent / "static"
 
 @asynccontextmanager
 async def lifespan(app):
     config.ALLOWED_ROOT.mkdir(parents=True, exist_ok=True)
-    yield
+    stop = asyncio.Event()
+    task = asyncio.create_task(sloth_mode.scheduler_loop(stop))
+    app.state.sloth_stop = stop
+    try:
+        yield
+    finally:
+        stop.set()
+        task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
 
 app = FastAPI(
     title="LazyDesk",
@@ -168,4 +180,48 @@ async def update_preferences(req: PreferencesRequest):
         payload = req.model_dump(exclude_none=True)
         return organizer.save_preferences(payload)
     except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+
+class SlothSettingsRequest(BaseModel):
+    enabled: bool | None = None
+    inbox: str | None = None
+    interval_minutes: int | None = Field(default=None, ge=15, le=1440)
+
+class InsightsRequest(BaseModel):
+    relative_path: str = "."
+
+@app.get("/api/sloth-mode")
+async def get_sloth_mode():
+    return sloth_mode.settings()
+
+@app.put("/api/sloth-mode")
+async def update_sloth_mode(req: SlothSettingsRequest):
+    try:
+        payload = req.model_dump(exclude_none=True)
+        return sloth_mode.configure(payload)
+    except UnsafePath as exc:
+        raise HTTPException(400, str(exc)) from exc
+    except (ValueError, OSError) as exc:
+        raise HTTPException(422, str(exc)) from exc
+
+@app.post("/api/sloth-mode/run")
+async def run_sloth_mode():
+    try:
+        return await asyncio.to_thread(sloth_mode.run_once)
+    except UnsafePath as exc:
+        raise HTTPException(400, str(exc)) from exc
+    except FileNotFoundError as exc:
+        raise HTTPException(404, str(exc)) from exc
+    except (ValueError, OSError) as exc:
+        raise HTTPException(422, str(exc)) from exc
+
+@app.get("/api/insights")
+async def get_insights(relative_path: str = "."):
+    try:
+        return await asyncio.to_thread(insights.workspace_insights, relative_path)
+    except UnsafePath as exc:
+        raise HTTPException(400, str(exc)) from exc
+    except FileNotFoundError as exc:
+        raise HTTPException(404, str(exc)) from exc
+    except (ValueError, OSError) as exc:
         raise HTTPException(422, str(exc)) from exc
