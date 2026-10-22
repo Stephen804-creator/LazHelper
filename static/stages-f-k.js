@@ -147,18 +147,42 @@
     }catch{}
   });
   async function refreshWorkflows(){
-    try{const d=await run("Loading workflows",()=>api("/api/workflows"));
-      show("Saved workflows",`${d.count} saved workflow(s).`,d.workflows.map(w=>`#${w.id} ${w.name} · ${w.steps.map(s=>s.action).join(" → ")}`));
+    try{
+      const d=await run("Loading workflows",()=>api("/api/workflows"));
+      const card=make("article",undefined,"fk-result");
+      card.append(make("h3","Saved workflows"),make("p",`${d.count} saved workflow(s). Runs perform read-only analysis.`));
+      if(!d.workflows.length)card.append(make("p","No workflows saved yet."));
+      d.workflows.forEach(w=>{
+        const row=make("div",undefined,"fk-workflow-row");
+        row.append(make("strong",`#${w.id} · ${w.name}`),make("p",w.steps.map(s=>s.action).join(" → ")));
+        const runButton=button("Run workflow","run-workflow");runButton.dataset.workflowId=String(w.id);
+        const deleteButton=button("Delete saved workflow","delete-workflow");deleteButton.dataset.workflowId=String(w.id);
+        row.append(runButton,deleteButton);card.append(row);
+      });
+      output.prepend(card);
     }catch{}
   }
   workflows.addEventListener("click",async e=>{
     const b=e.target.closest("[data-fk-action]");if(!b)return;
     if(b.dataset.fkAction==="list-workflows"){await refreshWorkflows();return;}
+    if(b.dataset.fkAction==="run-workflow"){
+      try{
+        const d=await run("Running read-only workflow",()=>api(`/api/workflows/${encodeURIComponent(b.dataset.workflowId)}/run`,{method:"POST"}));
+        show(`Workflow completed: ${d.workflow.name}`,d.message,d.results.map(r=>`Step ${r.step} · ${r.action} · ${JSON.stringify(r.result).slice(0,800)}`));
+      }catch{}
+      return;
+    }
+    if(b.dataset.fkAction==="delete-workflow"){
+      if(!window.confirm("Remove this saved workflow definition? No workspace files will be changed."))return;
+      try{await run("Removing workflow metadata",()=>api(`/api/workflows/${encodeURIComponent(b.dataset.workflowId)}`,{method:"DELETE"}));await refreshWorkflows();}catch{}
+      return;
+    }
     if(b.dataset.fkAction==="save-workflow"){
       const params={relative_path:root()};
       if(waction.value==="search")params.query=wquery.el.value.trim();
       try{const d=await run("Saving workflow",()=>api("/api/workflows",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:wname.el.value,description:"Saved from the LazHelper workspace interface.",steps:[{action:waction.value,parameters:params}]})}));
-        show("Workflow saved",`#${d.id} ${d.name}. Run it through the workflow API; actions are read-only.`,d.steps.map(s=>s.action));
+        show("Workflow saved",`#${d.id} ${d.name}. This workflow is read-only.`,d.steps.map(s=>s.action));
+        await refreshWorkflows();
       }catch{}
     }
   });
