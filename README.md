@@ -35,7 +35,7 @@ LazHelper is designed to keep the user in control. Recommendations and plans are
 
 ## Project status
 
-This development line contains work for Units 1–13:
+This development line contains Units 1–13 plus workspace-intelligence Stages A–E:
 
 | Unit | Focus |
 | --- | --- |
