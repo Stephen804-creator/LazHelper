@@ -139,13 +139,20 @@ def duplicate_insights(relative_path: str = ".", max_files: int = 250) -> dict[s
     text_items: list[tuple[dict[str, Any], set[str]]] = []
     errors = []
     checked = 0
+    skipped_files = 0
+    budget_limited = False
     bytes_hashed = 0
     hash_budget = 512 * 1024 * 1024
     for item in files:
         try:
             path = safe_file_path(item["relative_path"])
             size_bytes = path.stat().st_size
-            if size_bytes > config.MAX_FILE_BYTES or bytes_hashed + size_bytes > hash_budget:
+            if size_bytes > config.MAX_FILE_BYTES:
+                skipped_files += 1
+                continue
+            if bytes_hashed + size_bytes > hash_budget:
+                skipped_files += 1
+                budget_limited = True
                 continue
             digest = hashlib.sha256()
             with path.open("rb") as stream:
@@ -188,12 +195,12 @@ def duplicate_insights(relative_path: str = ".", max_files: int = 250) -> dict[s
                                         "reason": "Extracted text has high token overlap; verify meaningful differences manually."})
     similar_content.sort(key=lambda row: -row["token_jaccard"])
     return {
-        "root": scan["scanned_root"], "files_checked": checked,
+        "root": scan["scanned_root"], "files_checked": checked, "files_skipped": skipped_files, "hash_budget_limited": budget_limited,
         "exact_duplicate_groups": exact_groups, "exact_duplicate_files": sum(g["count"] for g in exact_groups),
         "version_families": version_groups[:200], "similar_content_pairs": similar_content[:100],
-        "truncated": scan["truncated"] or len(scan["files"]) > len(files),
+        "truncated": scan["truncated"] or len(scan["files"]) > len(files) or budget_limited,
         "extraction_notes": errors,
-        "message": "Detection only. Exact matches are byte-for-byte; version families and text similarity are candidates. Nothing is renamed, merged, moved, or deleted.",
+        "message": "Detection only. Exact matches are byte-for-byte; version families and text similarity are candidates. Large files and files beyond the cumulative hash budget are skipped and reported. Nothing is renamed, merged, moved, or deleted.",
     }
 
 
