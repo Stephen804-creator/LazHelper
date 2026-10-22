@@ -368,7 +368,7 @@ def ask_local_knowledge(question: str, relative_path: str = ".", max_sources: in
         answer = "I couldn't find a sufficiently relevant passage in the selected workspace. Try different keywords or choose another folder."
     return {"question": question, "answer": answer, "sources": sources, "source_count": len(sources),
             "files_considered": considered, "truncated": scan["truncated"] or len(scan["files"]) > 300,
-            "message": "Local retrieval only. No document content was sent to an AI service; answers are grounded in quoted source passages."}
+            "message": "Local retrieval only. Document content is not sent to an AI service; results are grounded in quoted source passages."}
 
 
 def create_workflow(payload: dict[str, Any]) -> dict[str, Any]:
