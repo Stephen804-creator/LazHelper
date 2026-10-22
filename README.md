@@ -51,7 +51,12 @@ This development line contains work for Units 1–13:
 | 10 | Local preferences and category rules |
 | 11 | Opt-in Sloth Mode |
 | 12 | Digital Workspace Insights |
-| 13 | Testing, security, and recovery work |\n| A | Intelligent file relationships |\n| B | Duplicate and version insights |\n| C | Unified content-aware search |\n| D | Workspace knowledge map |\n| E | Workspace health reports |
+| 13 | Testing, security, and recovery work |
+| A | Intelligent file relationships |
+| B | Duplicate and version insights |
+| C | Unified content-aware search |
+| D | Workspace knowledge map |
+| E | Workspace health reports |
 
 These features are under development. Check the linked pull requests and their CI results before treating the development line as release-ready. Unit 14, final packaging and release handoff, is not represented as complete here.
 
