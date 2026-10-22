@@ -326,42 +326,48 @@ def ask_local_knowledge(question: str, relative_path: str = ".", max_sources: in
     if not question or len(question) > 500:
         raise ValueError("Enter a question between 1 and 500 characters.")
     root = _inside_folder(relative_path)
-    scan = workspace_intelligence.content_search(question, root, max_results=max(10, min(max_sources * 5, 30)), max_files=300)
-    qtokens = {x.casefold() for x in re.findall(r"[a-z0-9]{2,}", question) if x.casefold() not in {"what", "where", "when", "which", "does", "have", "with", "from", "that", "this", "your", "about", "tell", "show", "find"}}
+    from .scanner import scan_folder
+    scan = scan_folder(root)
+    qtokens = {x.casefold() for x in re.findall(r"[a-z0-9]{2,}", question)
+               if x.casefold() not in {"what", "where", "when", "which", "does", "have", "with", "from", "that", "this", "your", "about", "tell", "show", "find", "are", "the", "for"}}
     candidates = []
-    for row in scan["results"]:
-        path = row["path"]
+    considered = 0
+    for item in scan["files"][:300]:
+        if not item.readable or item.size_bytes > config.MAX_FILE_BYTES:
+            continue
+        considered += 1
         try:
-            extracted = extract_file(path)
+            extracted = extract_file(item.relative_path)
             content = str(extracted.get("text") or "")
         except Exception:
-            content = row.get("snippet", "")
-        sentences = re.split(r"(?<=[.!?])\s+|\n+", content)
+            continue
+        sentences = re.split(r"(?<=[.!?])\\s+|\\n+", content)
         ranked = []
         for sentence in sentences:
             sentence = " ".join(sentence.split()).strip()
             if len(sentence) < 20:
                 continue
             words = {x.casefold() for x in re.findall(r"[a-z0-9]{2,}", sentence)}
-            score = len(qtokens & words) / max(1, len(qtokens))
-            if score:
-                ranked.append((score, sentence[:450]))
-        for score, sentence in sorted(ranked, reverse=True)[:2]:
-            candidates.append({"path": path, "score": round(score, 3), "evidence": sentence})
+            overlap = len(qtokens & words) / max(1, len(qtokens))
+            if overlap >= 0.2:
+                ranked.append((overlap, sentence[:450]))
+        for score, sentence in sorted(ranked, key=lambda row: (-row[0], row[1]))[:2]:
+            candidates.append({"path": item.relative_path, "score": round(score, 3), "evidence": sentence})
     candidates.sort(key=lambda row: (-row["score"], row["path"]))
     unique = []
     seen = set()
     for row in candidates:
         key = (row["path"], row["evidence"])
         if key not in seen:
-            unique.append(row); seen.add(key)
+            unique.append(row)
+            seen.add(key)
     sources = unique[:max(1, min(max_sources, 10))]
     if sources:
         answer = "I found these relevant passages in your local workspace. They are evidence to help answer your question, not a guarantee that the documents contain the complete answer."
     else:
         answer = "I couldn't find a sufficiently relevant passage in the selected workspace. Try different keywords or choose another folder."
     return {"question": question, "answer": answer, "sources": sources, "source_count": len(sources),
-            "files_considered": scan["files_considered"], "truncated": scan["truncated"],
+            "files_considered": considered, "truncated": scan["truncated"] or len(scan["files"]) > 300,
             "message": "Local retrieval only. No document content was sent to an AI service; answers are grounded in quoted source passages."}
 
 
