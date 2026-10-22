@@ -1,14 +1,14 @@
-# LazyDesk 🦥
+# LazHelper 🦥
 
 **A calmer way to understand, organise, and recover your digital workspace.**
 
-LazyDesk is a local-first, open-source file-understanding assistant being developed in the `LazHelper` repository. It helps you inspect files, understand their formats and contents, prepare organisation suggestions, review uncertain items, find exact duplicates, and undo supported moves.
+LazHelper is a local-first, open-source file-understanding assistant being developed in the `LazHelper` repository. It helps you inspect files, understand their formats and contents, prepare organisation suggestions, review uncertain items, find exact duplicates, and undo supported moves.
 
 Its guiding workflow is:
 
 **Scan → Understand → Recommend → Review → Organise → Undo**
 
-LazyDesk is designed to keep the user in control. Recommendations and plans are previews—not permission to change files.
+LazHelper is designed to keep the user in control. Recommendations and plans are previews—not permission to change files.
 
 ## Current capabilities
 
@@ -98,7 +98,7 @@ uvicorn app.main:app --reload
 
 Open **http://127.0.0.1:8000** in your browser. API documentation is available at **http://127.0.0.1:8000/docs** while the server is running. Sample workspace files are provided in `workspace/`.
 
-To work with a different folder, set `LAZYDESK_ALLOWED_ROOT` to that folder in `.env` and restart the application. Use a folder you are comfortable allowing LazyDesk to inspect and, only after approval, organise.
+To work with a different folder, set `LAZYDESK_ALLOWED_ROOT` to that folder in `.env` and restart the application. Use a folder you are comfortable allowing LazHelper to inspect and, only after approval, organise.
 
 ## Configuration
 
@@ -106,7 +106,7 @@ The main environment settings are:
 
 | Variable | Purpose | Default |
 | --- | --- | --- |
-| `LAZYDESK_ALLOWED_ROOT` | Workspace LazyDesk is allowed to access | `./workspace` |
+| `LAZYDESK_ALLOWED_ROOT` | Workspace LazHelper is allowed to access | `./workspace` |
 | `LAZYDESK_MAX_FILES` | Maximum number of files in a scan | `1500` |
 | `LAZYDESK_MAX_DEPTH` | Maximum directory traversal depth | `8` |
 | `LAZYDESK_MAX_FILE_MB` | Maximum file size in MB for supported processing | `20` |
@@ -125,11 +125,11 @@ AI recommendations are optional. Install and start Ollama separately, then pull 
 ollama pull gemma3:1b
 ```
 
-Set `LAZYDESK_OLLAMA_MODEL` in `.env` to the model you installed. LazyDesk does not automatically download models. Model requirements and licences are separate from the licence for this repository. Without a working Ollama service, file scanning and supported content extraction can still be used.
+Set `LAZYDESK_OLLAMA_MODEL` in `.env` to the model you installed. LazHelper does not automatically download models. Model requirements and licences are separate from the licence for this repository. Without a working Ollama service, file scanning and supported content extraction can still be used.
 
 ## Safety and privacy
 
-LazyDesk is designed around local processing and explicit user control, but it is still development software.
+LazHelper is designed around local processing and explicit user control, but it is still development software.
 
 - **Workspace boundary:** file paths must remain inside the configured workspace; symlinks are skipped or rejected.
 - **Review before action:** organisation plans do not change files. Moves require explicit approval.
@@ -163,7 +163,3 @@ The suite includes tests for scanning and path confinement, organisation safegua
 ## Contributing
 
 Issues, bug reports, test improvements, and focused pull requests are welcome. For changes that touch file operations, preserve the core contract: stay inside the configured workspace, show a preview, require explicit approval for moves, refuse overwrites, and never delete user files automatically.
-
-## Project name
-
-The GitHub repository is named **LazHelper**; the application is being developed as **LazyDesk**.
