@@ -230,3 +230,35 @@ Issues, bug reports, test improvements, and focused pull requests are welcome. F
 - Review bounded request history with status codes and measured durations.
 - Activity records omit prompts, request bodies, and document contents.
 - See [Stage P documentation](docs/stage-p.md).
+
+
+### Assistant profiles and personal memory (Stage Q)
+- Choose General, Study, Research, Personal Organiser, Developer, or Custom guidance.
+- Saved global, folder, and task instructions are applied to local Gemma recommendations only when the owner enables memory.
+- Profiles and memory never grant file permissions or approve changes.
+- The existing local Gemma/Ollama adapter remains the core; no provider-management stage or cloud model dependency is added.
+- See [Stage Q documentation](docs/stage-q.md).
+
+
+### Unified Ask and optional voice (Stage N)
+- Ask questions about workspace files or request a review-only task preview from one interface.
+- Optional browser voice dictation; review the transcript before submitting. Text remains available everywhere.
+- Optional browser read-aloud. Voice uses the same guarded request flow as text.
+- See [Stage N documentation](docs/stage-n.md).
+
+
+### Navigation and themes (Stage O)
+- Responsive in-page navigation and System, Light, or Dark theme selection.
+- Keyboard focus, skip-to-content, and reduced-motion support.
+- Theme preference is stored locally in this browser.
+- See [Stage O documentation](docs/stage-o.md).
+
+
+### Progress and Activity Centre (Stage P)
+- Shows real in-flight API requests without inventing percentage completion.
+- Local history records route, HTTP status, timestamps, and duration, capped at 500 events.
+- Prompts, request bodies, and extracted document content are not recorded.
+- See [Stage P documentation](docs/stage-p.md).
+
+
+Stage Q also hardens local knowledge retrieval with a conservative excerpt fallback when token overlap is sparse; it still returns only evidence found in the selected local workspace.

@@ -55,8 +55,8 @@
   const scopeLabel=el("label","Apply instruction to"); scopeLabel.htmlFor="instruction-scope";
   const scope=el("select"); scope.id="instruction-scope";
   [["global","All tasks"],["folder","A folder"],["task","A task type"]].forEach(([v,t])=>{const o=el("option",t);o.value=v;scope.append(o);});
-  const pathLabel=el("label","Folder path (folder rules only)"); pathLabel.htmlFor="instruction-path";
-  const path=el("input"); path.id="instruction-path"; path.placeholder="e.g. School/Assignments"; path.maxLength=500;
+  const pathLabel=el("label","Scope identifier"); pathLabel.htmlFor="instruction-path";
+  const path=el("input"); path.id="instruction-path"; path.placeholder="Choose a scope"; path.maxLength=500;
   const textLabel=el("label","Instruction"); textLabel.htmlFor="instruction-text";
   const instruction=el("textarea"); instruction.id="instruction-text"; instruction.rows=3; instruction.maxLength=2000; instruction.placeholder="Explain what you want LazHelper to prioritise…";
   const add=el("button","Add instruction","secondary-button"); add.type="button";
@@ -109,13 +109,19 @@
     try{const data=await request("/api/instructions");items=data.items||[];renderRules();show(ruleStatus,items.length+" instruction rule(s) loaded.");}
     catch(error){show(ruleStatus,error.message,true);}
   }
-  scope.addEventListener("change",()=>{path.disabled=scope.value!=="folder";});
+  scope.addEventListener("change",()=>{
+    path.disabled=scope.value==="global";
+    path.required=scope.value!=="global";
+    path.maxLength=scope.value==="folder"?500:40;
+    pathLabel.textContent=scope.value==="folder"?"Folder path (inside the configured workspace)":scope.value==="task"?"Task type (e.g. analysis, question, command_preview)":"No additional scope needed";
+    path.placeholder=scope.value==="folder"?"e.g. School/Assignments":scope.value==="task"?"e.g. analysis":"Not required";
+  });
   scope.dispatchEvent(new Event("change"));
   add.addEventListener("click",()=>{
     const value=instruction.value.trim();
     if(!value)return show(ruleStatus,"Write an instruction first.",true);
     if(items.length>=50)return show(ruleStatus,"The 50-instruction limit has been reached.",true);
-    items.push({scope:scope.value,scope_path:scope.value==="folder"?path.value.trim():"",instruction:value,enabled:true});
+    items.push({scope:scope.value,scope_path:scope.value==="global"?"":path.value.trim(),instruction:value,enabled:true});
     instruction.value="";renderRules();show(ruleStatus,"Instruction added to the unsaved list.");
   });
   saveRules.addEventListener("click",async()=>{
