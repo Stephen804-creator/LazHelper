@@ -341,7 +341,7 @@ def ask_local_knowledge(question: str, relative_path: str = ".", max_sources: in
             content = str(extracted.get("text") or "")
         except Exception:
             continue
-        sentences = re.split(r"(?<=[.!?])\\s+|\\n+", content)
+        sentences = re.split(r"(?<=[.!?])\s+|\n+", content)
         ranked = []
         for sentence in sentences:
             sentence = " ".join(sentence.split()).strip()
