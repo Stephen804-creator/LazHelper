@@ -25,8 +25,8 @@ def test_memory_is_opt_in_and_scoped(memory_db):
     disabled = profiles.instruction_context("School/notes.pdf", "analysis")
     assert "balanced" not in disabled.lower()  # General profile guidance is used, not saved memory.
     assert "Use short explanations." not in disabled
-    policies.update_assistant_profile({"profile": "study", "memory_enabled": True})
-    context = policies.instruction_context("School/notes.pdf", "analysis")
+    profiles.update_assistant_profile({"profile": "study", "memory_enabled": True})
+    context = profiles.instruction_context("School/notes.pdf", "analysis")
     assert "study guidance" in context.lower()
     assert "Use short explanations." in context
     assert "Prefer study examples." in context
@@ -35,9 +35,9 @@ def test_memory_is_opt_in_and_scoped(memory_db):
 
 def test_memory_folder_matching_does_not_match_similar_prefix(memory_db):
     policies.save_instructions([{"scope": "folder", "scope_path": "School", "instruction": "School-only preference."}])
-    policies.update_assistant_profile({"memory_enabled": True})
-    assert "School-only preference." not in policies.instruction_context("Schoolwork/file.txt", "analysis")
-    assert "School-only preference." in policies.instruction_context("School/file.txt", "analysis")
+    profiles.update_assistant_profile({"memory_enabled": True})
+    assert "School-only preference." not in profiles.instruction_context("Schoolwork/file.txt", "analysis")
+    assert "School-only preference." in profiles.instruction_context("School/file.txt", "analysis")
 
 
 def test_task_scope_is_validated(memory_db):
