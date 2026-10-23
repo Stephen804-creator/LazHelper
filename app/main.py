@@ -15,7 +15,7 @@ from .extractor import extract_file
 from .ai_engine import recommend, AIUnavailable
 from . import organizer, sloth_mode, insights, workspace_intelligence, extended_workspace
 from .stage_l import router as stage_l_router
-from . import policies
+from . import policies, activity
 
 STATIC = Path(__file__).resolve().parent.parent / "static"
 
@@ -43,6 +43,17 @@ app = FastAPI(
 )
 app.mount("/static", StaticFiles(directory=STATIC), name="static")
 app.include_router(stage_l_router)
+
+@app.middleware("http")
+async def capture_api_activity(request, call_next):
+    token = activity.begin(request.method, request.url.path)
+    try:
+        response = await call_next(request)
+    except Exception:
+        activity.finish(token, 500)
+        raise
+    activity.finish(token, response.status_code)
+    return response
 
 # Central policy enforcement protects direct API calls as well as the browser UI.
 @app.middleware("http")
@@ -124,6 +135,27 @@ class OwnerPolicyRequest(BaseModel):
 class OwnerInstructionsRequest(BaseModel):
     items: list[dict] = Field(default_factory=list, max_length=50)
 
+class AssistantProfileRequest(BaseModel):
+    profile: str | None = None
+    memory_enabled: bool | None = None
+
+@app.get("/api/activity")
+async def get_activity(limit: int = 50):
+    if not 1 <= limit <= 200:
+        raise HTTPException(422, "limit must be between 1 and 200.")
+    return activity.history(limit)
+
+@app.get("/api/assistant-profile")
+async def get_assistant_profile():
+    return policies.get_assistant_profile()
+
+@app.put("/api/assistant-profile")
+async def update_assistant_profile(req: AssistantProfileRequest):
+    try:
+        return policies.update_assistant_profile(req.model_dump(exclude_none=True))
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+
 @app.get("/api/permissions")
 async def get_owner_permissions():
     return policies.get_policy()
@@ -185,7 +217,7 @@ async def analyze(req: AnalyzeRequest):
     ai_status = "unavailable"
     message = "Content extracted. Start Ollama and pull the configured model for an AI recommendation."
     try:
-        rec = await recommend(path.name, extracted["text"], extracted["details"])
+        rec = await recommend(path.name, extracted["text"], extracted["details"], req.relative_path)
         ai_status, message = "ready", "Recommendation generated. Review it before taking action."
     except AIUnavailable as exc:
         message = str(exc)
