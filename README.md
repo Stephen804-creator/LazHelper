@@ -238,3 +238,24 @@ Issues, bug reports, test improvements, and focused pull requests are welcome. F
 - Profiles and memory never grant file permissions or approve changes.
 - The existing local Gemma/Ollama adapter remains the core; no provider-management stage or cloud model dependency is added.
 - See [Stage Q documentation](docs/stage-q.md).
+
+
+### Unified Ask and optional voice (Stage N)
+- Ask questions about workspace files or request a review-only task preview from one interface.
+- Optional browser voice dictation; review the transcript before submitting. Text remains available everywhere.
+- Optional browser read-aloud. Voice uses the same guarded request flow as text.
+- See [Stage N documentation](docs/stage-n.md).
+
+
+### Navigation and themes (Stage O)
+- Responsive in-page navigation and System, Light, or Dark theme selection.
+- Keyboard focus, skip-to-content, and reduced-motion support.
+- Theme preference is stored locally in this browser.
+- See [Stage O documentation](docs/stage-o.md).
+
+
+### Progress and Activity Centre (Stage P)
+- Shows real in-flight API requests without inventing percentage completion.
+- Local history records route, HTTP status, timestamps, and duration, capped at 500 events.
+- Prompts, request bodies, and extracted document content are not recorded.
+- See [Stage P documentation](docs/stage-p.md).
