@@ -15,7 +15,7 @@ from .extractor import extract_file
 from .ai_engine import recommend, AIUnavailable
 from . import organizer, sloth_mode, insights, workspace_intelligence, extended_workspace
 from .stage_l import router as stage_l_router
-from . import policies, activity
+from . import policies, activity, profiles
 
 STATIC = Path(__file__).resolve().parent.parent / "static"
 
@@ -147,12 +147,12 @@ async def get_activity(limit: int = 50):
 
 @app.get("/api/assistant-profile")
 async def get_assistant_profile():
-    return policies.get_assistant_profile()
+    return profiles.get_assistant_profile()
 
 @app.put("/api/assistant-profile")
 async def update_assistant_profile(req: AssistantProfileRequest):
     try:
-        return policies.update_assistant_profile(req.model_dump(exclude_none=True))
+        return profiles.update_assistant_profile(req.model_dump(exclude_none=True))
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from exc
 
