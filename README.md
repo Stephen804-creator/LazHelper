@@ -27,7 +27,24 @@ LazHelper is designed to keep the user in control. Recommendations and plans are
 - Keep a local operation journal and support undo when the original path is available.
 - Store personal category preferences locally.
 
-### Workspace intelligence (Stages A–E)\n- Find explainable candidate relationships between files using shared filename terms, folder context, and likely version suffixes.\n- Combine exact SHA-256 duplicate detection with cautious filename-version families and bounded text-similarity hints.\n- Search filenames and supported extracted content locally, with short evidence snippets.\n- Build a lightweight knowledge graph of folder/file nodes and candidate relationship edges.\n- Generate a workspace health checklist for generic names, large or unsupported files, old files, crowded folders, and repeated naming patterns.\n- Keep all suggestions read-only: no automatic renaming, merging, moving, or deletion. Content search and similarity inspection stay local and do not send data to an AI provider.\n\n### Sloth Mode and workspace insights
+### Workspace intelligence (Stages A–E)
+- Find explainable candidate relationships between files using shared filename terms, folder context, and likely version suffixes.
+- Combine exact SHA-256 duplicate detection with cautious filename-version families and bounded text-similarity hints.
+- Search filenames and supported extracted content locally, with short evidence snippets.
+- Build a lightweight knowledge graph of folder/file nodes and candidate relationship edges.
+- Generate a workspace health checklist for generic names, large or unsupported files, old files, crowded folders, and repeated naming patterns.
+- Keep all suggestions read-only: no automatic renaming, merging, moving, or deletion. Content search and similarity inspection stay local and do not send data to an AI provider.
+
+### Recovery, projects, and local workflows (Stages F–K)
+- Export the operation journal as JSON or CSV and inspect whether a past move appears currently eligible for safe undo.
+- Save study, research, work, or development workspace profiles with tags and suggested folder structures; metadata is stored without creating folders.
+- Inspect ZIP archive contents with path, symlink, encryption, member-size, entry-count, expanded-size, and compression-ratio checks. Archive inspection never extracts files.
+- Translate supported natural-language requests into reviewable action proposals; unsupported and destructive commands are not executed.
+- Retrieve relevant evidence passages from local documents with source paths. This is local retrieval, not an unsupported claim of a complete AI-generated answer.
+- Save and run reusable, allowlisted read-only workflows for search, relationships, duplicate/version checks, workspace health, and knowledge maps.
+- Keep file-changing actions outside these stages; existing move operations still require explicit approval.
+
+### Sloth Mode and workspace insights
 - Enable **Sloth Mode** to review a chosen inbox on a configurable schedule.
 - See a summary of files ready for review, uncertain items, and conflicts.
 - Keep Sloth Mode disabled by default; scheduled reviews do not move or delete files.
@@ -35,7 +52,7 @@ LazHelper is designed to keep the user in control. Recommendations and plans are
 
 ## Project status
 
-This development line contains Units 1–13 plus workspace-intelligence Stages A–E:
+This development line contains Units 1–13 plus workspace-intelligence Stages A–K:
 
 | Unit | Focus |
 | --- | --- |
@@ -57,8 +74,14 @@ This development line contains Units 1–13 plus workspace-intelligence Stages A
 | C | Unified content-aware search |
 | D | Workspace knowledge map |
 | E | Workspace health reports |
+| F | Recovery visibility and journal export |
+| G | Project and study workspace profiles |
+| H | Safe ZIP archive inspection |
+| I | Natural-language command previews |
+| J | Local document evidence retrieval |
+| K | Reusable read-only workflows |
 
-These features are under development. Check the linked pull requests and their CI results before treating the development line as release-ready. Unit 14, final packaging and release handoff, is not represented as complete here.
+These features are under development. Check the linked pull requests and their CI results before treating the development line as release-ready. Stages F–K do not automatically create folders, extract archives, execute shell commands, or mutate files. Unit 14, final packaging and release handoff, is not represented as complete here.
 
 ## Requirements
 
@@ -162,7 +185,10 @@ The suite includes tests for scanning and path confinement, organisation safegua
 ## Documentation
 
 - `docs/units-6-10.md` — review-first organisation, duplicates, queue, journal, and preferences.
-- `docs/units-11-13.md` — Sloth Mode, workspace insights, and operational boundaries.\n- `docs/stages-a-e.md` — workspace relationships, duplicate/version hints, search, knowledge map, and health reports.
+- `docs/units-11-13.md` — Sloth Mode, workspace insights, and operational boundaries.
+- `docs/stages-a-e.md` — workspace relationships, duplicate/version hints, search, knowledge map, and health reports.
+- `docs/stages-f-k.md` — recovery export, project profiles, ZIP inspection, command previews, local evidence retrieval, and read-only workflows.
+- `docs/stages-f-k.md` — recovery export, project profiles, ZIP inspection, command previews, local evidence retrieval, and read-only workflows.
 - `/docs` — interactive API documentation when the local server is running.
 
 ## Contributing
