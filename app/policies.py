@@ -158,7 +158,7 @@ def save_instructions(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
         if scope == "folder" and not path.strip():
             raise ValueError("Folder instructions need a workspace-relative folder.")
         if scope == "folder":
-            segments = path.replace("\\\\", "/").split("/")
+            segments = path.replace(chr(92), "/").split("/")
             if any(not segment or segment in {".", ".."} or any(ch in segment for ch in ':<>|"?*') for segment in segments):
                 raise ValueError("Folder instruction paths must contain safe relative segments.")
         if scope == "task" and not re.fullmatch(r"[A-Za-z0-9_-]{1,40}", path):
