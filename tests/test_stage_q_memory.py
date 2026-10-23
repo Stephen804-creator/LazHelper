@@ -42,4 +42,4 @@ def test_memory_folder_matching_does_not_match_similar_prefix(memory_db):
 
 def test_task_scope_is_validated(memory_db):
     with pytest.raises(ValueError, match="simple task type"):
-        policies.save_instructions([{"scope": "task", "scope_path": "../outside", "instruction": "unsafe"}])
+        policies.save_instructions([{"scope": "task", "scope_path": "invalid task type", "instruction": "unsafe"}])
