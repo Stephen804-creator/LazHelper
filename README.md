@@ -216,3 +216,10 @@ Issues, bug reports, test improvements, and focused pull requests are welcome. F
 - Dictate requests with browser speech recognition when available, review the transcript, and submit through the same policy-controlled API.
 - Optionally read responses aloud; text input remains available in unsupported browsers.
 - See [Stage N documentation](docs/stage-n.md).
+
+
+### Navigation and accessible themes (Stage O)
+- Navigate directly to Ask, Workspace, Tools, Permissions, and Plans.
+- Choose System, Light, or Dark mode with a locally saved preference.
+- Responsive menu, keyboard focus, skip-to-content link, and reduced-motion support.
+- See [Stage O documentation](docs/stage-o.md).
