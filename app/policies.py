@@ -7,6 +7,7 @@ what the application API may do inside the configured workspace.
 from __future__ import annotations
 
 import json
+import re
 import sqlite3
 from datetime import datetime, timezone
 from typing import Any
@@ -156,6 +157,12 @@ def save_instructions(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
             path = ""
         if scope == "folder" and not path.strip():
             raise ValueError("Folder instructions need a workspace-relative folder.")
+        if scope == "folder":
+            segments = path.replace("\\\\", "/").split("/")
+            if any(not segment or segment in {".", ".."} or any(ch in segment for ch in ':<>|"?*') for segment in segments):
+                raise ValueError("Folder instruction paths must contain safe relative segments.")
+        if scope == "task" and not re.fullmatch(r"[A-Za-z0-9_-]{1,40}", path):
+            raise ValueError("Task instructions need a simple task type such as analysis, question, or command_preview.")
         if not isinstance(instruction, str) or not instruction.strip() or len(instruction) > 2000:
             raise ValueError("Instructions must contain 1–2000 characters.")
         if not isinstance(enabled, bool):
