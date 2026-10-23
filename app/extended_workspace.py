@@ -351,6 +351,13 @@ def ask_local_knowledge(question: str, relative_path: str = ".", max_sources: in
             overlap = len(qtokens & words) / max(1, len(qtokens))
             if overlap >= 0.2:
                 ranked.append((overlap, sentence[:450]))
+        # If sentence token overlap is too sparse, retain a short local excerpt only
+        # when at least one meaningful query token is literally present in the content.
+        if not ranked and qtokens and content:
+            folded = content.casefold()
+            matching = [token for token in qtokens if token in folded]
+            if matching:
+                ranked.append((min(0.25, len(matching) / max(1, len(qtokens))), " ".join(content.split())[:450]))
         for score, sentence in sorted(ranked, key=lambda row: (-row[0], row[1]))[:2]:
             candidates.append({"path": item.relative_path, "score": round(score, 3), "evidence": sentence})
     candidates.sort(key=lambda row: (-row["score"], row["path"]))
