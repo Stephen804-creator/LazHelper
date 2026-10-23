@@ -1,7 +1,7 @@
 import asyncio
 import json
 
-from app import config, organizer, policies
+from app import config, organizer, policies, profiles
 from app import ai_engine
 
 
@@ -28,7 +28,7 @@ def test_gemma_prompt_uses_opt_in_saved_preferences(tmp_path, monkeypatch):
         {"scope": "global", "instruction": "Use short summaries."},
         {"scope": "folder", "scope_path": "School", "instruction": "Prioritise revision notes."},
     ])
-    policies.update_assistant_profile({"profile": "study", "memory_enabled": True})
+    profiles.update_assistant_profile({"profile": "study", "memory_enabled": True})
     captured = {}
 
     class FakeResponse:
