@@ -15,7 +15,7 @@ from .extractor import extract_file
 from .ai_engine import recommend, AIUnavailable
 from . import organizer, sloth_mode, insights, workspace_intelligence, extended_workspace
 from .stage_l import router as stage_l_router
-from . import policies
+from . import policies, activity
 
 STATIC = Path(__file__).resolve().parent.parent / "static"
 
@@ -43,6 +43,17 @@ app = FastAPI(
 )
 app.mount("/static", StaticFiles(directory=STATIC), name="static")
 app.include_router(stage_l_router)
+
+@app.middleware("http")
+async def capture_api_activity(request, call_next):
+    token = activity.begin(request.method, request.url.path)
+    try:
+        response = await call_next(request)
+    except Exception:
+        activity.finish(token, 500)
+        raise
+    activity.finish(token, response.status_code)
+    return response
 
 # Central policy enforcement protects direct API calls as well as the browser UI.
 @app.middleware("http")
@@ -123,6 +134,12 @@ class OwnerPolicyRequest(BaseModel):
 
 class OwnerInstructionsRequest(BaseModel):
     items: list[dict] = Field(default_factory=list, max_length=50)
+
+@app.get("/api/activity")
+async def get_activity(limit: int = 50):
+    if not 1 <= limit <= 200:
+        raise HTTPException(422, "limit must be between 1 and 200.")
+    return activity.history(limit)
 
 @app.get("/api/permissions")
 async def get_owner_permissions():
