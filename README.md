@@ -223,3 +223,10 @@ Issues, bug reports, test improvements, and focused pull requests are welcome. F
 - Choose System, Light, or Dark mode with a locally saved preference.
 - Responsive menu, keyboard focus, skip-to-content link, and reduced-motion support.
 - See [Stage O documentation](docs/stage-o.md).
+
+
+### Progress and Activity Centre (Stage P)
+- Track actual in-flight API requests with an indeterminate progress bar when percentage completion is not available.
+- Review bounded request history with status codes and measured durations.
+- Activity records omit prompts, request bodies, and document contents.
+- See [Stage P documentation](docs/stage-p.md).
