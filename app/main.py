@@ -4,7 +4,7 @@ from pathlib import Path
 import zipfile
 
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -14,6 +14,8 @@ from .scanner import scan_folder, safe_file_path, UnsafePath
 from .extractor import extract_file
 from .ai_engine import recommend, AIUnavailable
 from . import organizer, sloth_mode, insights, workspace_intelligence, extended_workspace
+from .stage_l import router as stage_l_router
+from . import policies
 
 STATIC = Path(__file__).resolve().parent.parent / "static"
 
@@ -40,6 +42,44 @@ app = FastAPI(
     lifespan=lifespan,
 )
 app.mount("/static", StaticFiles(directory=STATIC), name="static")
+app.include_router(stage_l_router)
+
+# Central policy enforcement protects direct API calls as well as the browser UI.
+@app.middleware("http")
+async def enforce_owner_policy(request, call_next):
+    path, method = request.url.path, request.method
+    capability = None
+    if path == "/api/scan" or path == "/api/organize/plan" or path == "/api/commands/preview":
+        capability = "read_metadata"
+    elif path == "/api/analyze" or path in {"/api/search", "/api/knowledge/ask", "/api/duplicates"}:
+        capability = "read_content"
+    elif path == "/api/organize/apply" and method == "POST":
+        capability = "move_files"
+    elif path.startswith("/api/journal/") and path.endswith("/undo") and method == "POST":
+        capability = "restore_moves"
+    elif path == "/api/plans/export" and method == "POST":
+        capability = "export_files"
+    elif path == "/api/plans/import" and method == "POST":
+        capability = "read_metadata"
+    elif path == "/api/archive/inspect" and method == "POST":
+        capability = "read_content"
+    elif path in {"/api/insights", "/api/relationships", "/api/knowledge-map", "/api/health-report"}:
+        capability = "read_metadata"
+    elif path == "/api/duplicates/insights" and method == "POST":
+        capability = "read_content"
+    elif path.startswith("/api/projects/") and path.endswith("/overview"):
+        capability = "read_metadata"
+    elif path.startswith("/api/workflows/") and path.endswith("/run") and method == "POST":
+        capability = "read_metadata"
+    if capability:
+        try:
+            policies.require(capability)
+        except PermissionError as exc:
+            return JSONResponse(status_code=403, content={
+                "detail": str(exc), "required_capability": capability,
+                "owner_action": "Enable this capability in LazHelper's Owner permissions panel.",
+            })
+    return await call_next(request)
 
 class PlanRequest(BaseModel):
     relative_paths: list[str] = Field(min_length=1, max_length=500)
@@ -64,6 +104,48 @@ class PreferencesRequest(BaseModel):
 class QueueDecision(BaseModel):
     path: str
     decision: str
+
+class OwnerPolicyRequest(BaseModel):
+    read_metadata: bool | None = None
+    read_content: bool | None = None
+    create_files: bool | None = None
+    create_folders: bool | None = None
+    edit_files: bool | None = None
+    rename_files: bool | None = None
+    move_files: bool | None = None
+    copy_files: bool | None = None
+    export_files: bool | None = None
+    restore_moves: bool | None = None
+    delete_files: bool | None = None
+    run_commands: bool | None = None
+    mode: str | None = None
+    scope: str | None = None
+
+class OwnerInstructionsRequest(BaseModel):
+    items: list[dict] = Field(default_factory=list, max_length=50)
+
+@app.get("/api/permissions")
+async def get_owner_permissions():
+    return policies.get_policy()
+
+@app.put("/api/permissions")
+async def update_owner_permissions(req: OwnerPolicyRequest):
+    try:
+        return policies.update_policy(req.model_dump(exclude_none=True))
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+
+@app.get("/api/instructions")
+async def get_owner_instructions():
+    return {"items": policies.list_instructions(), "note": "Instructions guide recommendations only and never grant capabilities."}
+
+@app.put("/api/instructions")
+async def update_owner_instructions(req: OwnerInstructionsRequest):
+    try:
+        return {"items": policies.save_instructions(req.items),
+                "note": "Saved instructions guide recommendations only and never grant capabilities."}
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
 
 @app.get("/")
 async def home():
