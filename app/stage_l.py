@@ -220,7 +220,7 @@ def import_plan(content: str, import_format: str = "json") -> dict[str, Any]:
         target = (config.ALLOWED_ROOT.resolve() / Path(*PurePosixPath(destination).parts)).resolve()
         collision = target.exists()
         same_path = source_rel == destination
-        status = "stale" if changed else ("conflict" if collision else ("already_organised" if same_path else "ready"))
+        status = "stale" if changed else ("already_organised" if same_path else ("conflict" if collision else "ready"))
         validated.append({
             "source": source_rel,
             "destination": destination,
@@ -230,8 +230,7 @@ def import_plan(content: str, import_format: str = "json") -> dict[str, Any]:
                        "Destination currently exists; it will not be overwritten." if collision else
                        "Source and destination are identical." if same_path else
                        "Paths validated against the current workspace; review before approval."),
-            "confidence": round(min(max(float(item.get("confidence", 0.5)), 0.0), 1.0), 3)
-                          if _is_number(item.get("confidence")) else 0.5,
+            "confidence": round(min(max(_parse_confidence(item.get("confidence")), 0.0), 1.0), 3),
             "expected_metadata": expected,
             "current_metadata": actual,
             "source_changed": changed,
@@ -255,8 +254,13 @@ def import_plan(content: str, import_format: str = "json") -> dict[str, Any]:
     }
 
 
-def _is_number(value: Any) -> bool:
-    return isinstance(value, (int, float)) and not isinstance(value, bool)
+def _parse_confidence(value: Any) -> float:
+    try:
+        if isinstance(value, bool):
+            return 0.5
+        return float(value)
+    except (TypeError, ValueError):
+        return 0.5
 
 
 @router.post("/api/plans/export")
