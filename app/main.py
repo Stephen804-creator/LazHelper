@@ -14,6 +14,7 @@ from .scanner import scan_folder, safe_file_path, UnsafePath
 from .extractor import extract_file
 from .ai_engine import recommend, AIUnavailable
 from . import organizer, sloth_mode, insights, workspace_intelligence, extended_workspace
+from .stage_l import router as stage_l_router
 
 STATIC = Path(__file__).resolve().parent.parent / "static"
 
@@ -40,6 +41,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 app.mount("/static", StaticFiles(directory=STATIC), name="static")
+app.include_router(stage_l_router)
 
 class PlanRequest(BaseModel):
     relative_paths: list[str] = Field(min_length=1, max_length=500)
