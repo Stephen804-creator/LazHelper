@@ -1,6 +1,6 @@
 import pytest
 
-from app import organizer, policies
+from app import organizer, policies, profiles
 
 
 @pytest.fixture
@@ -9,7 +9,7 @@ def memory_db(tmp_path, monkeypatch):
 
 
 def test_profile_does_not_grant_permissions(memory_db):
-    result = policies.update_assistant_profile({"profile": "developer"})
+    result = profiles.update_assistant_profile({"profile": "developer"})
     assert result["profile"] == "developer"
     assert result["memory_enabled"] is False
     assert policies.get_policy()["move_files"] is False
@@ -22,7 +22,7 @@ def test_memory_is_opt_in_and_scoped(memory_db):
         {"scope": "folder", "scope_path": "School", "instruction": "Prefer study examples."},
         {"scope": "task", "scope_path": "analysis", "instruction": "Mention uncertainty."},
     ])
-    disabled = policies.instruction_context("School/notes.pdf", "analysis")
+    disabled = profiles.instruction_context("School/notes.pdf", "analysis")
     assert "balanced" not in disabled.lower()  # General profile guidance is used, not saved memory.
     assert "Use short explanations." not in disabled
     policies.update_assistant_profile({"profile": "study", "memory_enabled": True})
