@@ -7,6 +7,7 @@ what the application API may do inside the configured workspace.
 from __future__ import annotations
 
 import json
+import re
 import sqlite3
 from datetime import datetime, timezone
 from typing import Any
@@ -35,6 +36,14 @@ DEFAULT_POLICY.update({
     "scope": "configured_workspace",
 })
 VALID_MODES = {"preview", "ask_before_changes", "authorised_automation"}
+ASSISTANT_PROFILES = {
+    "general": {"label": "General assistant", "description": "Balanced help for understanding and organising a workspace.", "guidance": "Be clear, cautious, and concise. Separate evidence from assumptions."},
+    "study": {"label": "Study assistant", "description": "Support learning, revision, and course material.", "guidance": "Explain concepts clearly, define technical terms, and favour structured study guidance without inventing facts."},
+    "research": {"label": "Research assistant", "description": "Prioritise source evidence and uncertainty.", "guidance": "Distinguish source evidence from inference, identify missing evidence, and avoid unsupported claims."},
+    "organiser": {"label": "Personal organiser", "description": "Prioritise calm, reversible file organisation.", "guidance": "Prefer explainable categories, reversible plans, collision checks, and explicit review before file changes."},
+    "developer": {"label": "Developer assistant", "description": "Help understand code and project files safely.", "guidance": "Explain code and project structure. Never claim code was run or changed unless the application confirms it."},
+    "custom": {"label": "Custom preferences", "description": "Use the owner's saved instructions when memory is enabled.", "guidance": "Follow applicable saved preferences while preserving all application safety rules."},
+}
 
 
 def _now() -> str:
@@ -46,6 +55,12 @@ def _connect():
     con.execute("""CREATE TABLE IF NOT EXISTS owner_policy (
         id INTEGER PRIMARY KEY CHECK (id = 1),
         value TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+    )""")
+    con.execute("""CREATE TABLE IF NOT EXISTS assistant_profile (
+        id INTEGER PRIMARY KEY CHECK (id = 1),
+        profile TEXT NOT NULL DEFAULT 'general',
+        memory_enabled INTEGER NOT NULL DEFAULT 0,
         updated_at TEXT NOT NULL
     )""")
     con.execute("""CREATE TABLE IF NOT EXISTS owner_instructions (
@@ -142,6 +157,12 @@ def save_instructions(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
             path = ""
         if scope == "folder" and not path.strip():
             raise ValueError("Folder instructions need a workspace-relative folder.")
+        if scope == "folder":
+            segments = path.replace(chr(92), "/").split("/")
+            if any(not segment or segment in {".", ".."} or any(ch in segment for ch in ':<>|"?*') for segment in segments):
+                raise ValueError("Folder instruction paths must contain safe relative segments.")
+        if scope == "task" and not re.fullmatch(r"[A-Za-z0-9_-]{1,40}", path):
+            raise ValueError("Task instructions need a simple task type such as analysis, question, or command_preview.")
         if not isinstance(instruction, str) or not instruction.strip() or len(instruction) > 2000:
             raise ValueError("Instructions must contain 1–2000 characters.")
         if not isinstance(enabled, bool):
@@ -156,3 +177,59 @@ def save_instructions(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
             [(scope, path, instruction, int(enabled), now, now) for scope, path, instruction, enabled in cleaned],
         )
     return list_instructions()
+
+
+def get_assistant_profile() -> dict[str, Any]:
+    with _connect() as con:
+        row = con.execute("SELECT profile,memory_enabled,updated_at FROM assistant_profile WHERE id=1").fetchone()
+    name = row["profile"] if row and row["profile"] in ASSISTANT_PROFILES else "general"
+    return {
+        "profile": name,
+        "memory_enabled": bool(row["memory_enabled"]) if row else False,
+        "updated_at": row["updated_at"] if row else None,
+        "profiles": ASSISTANT_PROFILES,
+        "note": "Profiles guide recommendations; they never grant file permissions or approve changes.",
+    }
+
+
+def update_assistant_profile(payload: dict[str, Any]) -> dict[str, Any]:
+    if set(payload) - {"profile", "memory_enabled"}:
+        raise ValueError("Only profile and memory_enabled may be changed.")
+    current = get_assistant_profile()
+    name = payload.get("profile", current["profile"])
+    memory_enabled = payload.get("memory_enabled", current["memory_enabled"])
+    if name not in ASSISTANT_PROFILES:
+        raise ValueError("Choose a supported assistant profile.")
+    if not isinstance(memory_enabled, bool):
+        raise ValueError("memory_enabled must be true or false.")
+    with _connect() as con:
+        con.execute(
+            "INSERT INTO assistant_profile(id,profile,memory_enabled,updated_at) VALUES(1,?,?,?) "
+            "ON CONFLICT(id) DO UPDATE SET profile=excluded.profile,memory_enabled=excluded.memory_enabled,updated_at=excluded.updated_at",
+            (name, int(memory_enabled), _now()),
+        )
+    return get_assistant_profile()
+
+
+def instruction_context(relative_path: str = ".", task_type: str = "analysis") -> str:
+    """Return bounded preference context; memory rules are opt-in and never permissions."""
+    profile = get_assistant_profile()
+    guidance = [ASSISTANT_PROFILES[profile["profile"]]["guidance"]]
+    if profile["memory_enabled"]:
+        normal_path = str(relative_path or ".").replace("\\", "/").strip("/")
+        with _connect() as con:
+            rows = con.execute(
+                "SELECT scope,scope_path,instruction FROM owner_instructions WHERE enabled=1 ORDER BY id LIMIT 50"
+            ).fetchall()
+        for row in rows:
+            scope, scope_path = row["scope"], row["scope_path"]
+            applies = scope == "global"
+            if scope == "folder":
+                applies = normal_path == scope_path or normal_path.startswith(scope_path.rstrip("/") + "/")
+            elif scope == "task":
+                applies = scope_path == task_type or scope_path == "general"
+            if applies:
+                guidance.append(row["instruction"][:1000])
+            if len(guidance) >= 8:
+                break
+    return "\n".join(guidance)[:4000]
