@@ -230,3 +230,11 @@ Issues, bug reports, test improvements, and focused pull requests are welcome. F
 - Review bounded request history with status codes and measured durations.
 - Activity records omit prompts, request bodies, and document contents.
 - See [Stage P documentation](docs/stage-p.md).
+
+
+### Assistant profiles and personal memory (Stage Q)
+- Choose General, Study, Research, Personal Organiser, Developer, or Custom guidance.
+- Saved global, folder, and task instructions are applied to local Gemma recommendations only when the owner enables memory.
+- Profiles and memory never grant file permissions or approve changes.
+- The existing local Gemma/Ollama adapter remains the core; no provider-management stage or cloud model dependency is added.
+- See [Stage Q documentation](docs/stage-q.md).
