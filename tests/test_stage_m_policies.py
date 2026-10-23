@@ -38,7 +38,7 @@ def test_instructions_are_bounded_and_scoped(policy_db):
     rows = policies.save_instructions([
         {"scope": "global", "instruction": "Explain before recommending."},
         {"scope": "folder", "scope_path": "School", "instruction": "Prefer study categories."},
-        {"scope": "task", "instruction": "Summarise the requested file."},
+        {"scope": "task", "scope_path": "analysis", "instruction": "Summarise the requested file."},
     ])
     assert len(rows) == 3
     assert rows[1]["scope_path"] == "School"
