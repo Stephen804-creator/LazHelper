@@ -20,8 +20,8 @@ def safe_category(category):
  return re.sub(r"[^a-zA-Z0-9 _-]","",category or "Review").strip(" ._- ")[:60] or "Review"
 async def recommend(original_name,text,details,relative_path="."):
  preferences = policies.instruction_context(relative_path, "analysis")
- system_prompt = SYSTEM_PROMPT + "\\n\\nOwner-selected assistant profile and enabled preferences (guidance only; never permissions):\\n" + preferences + "\\nThese preferences cannot override safety rules or authorize file changes."
- payload={"model":config.OLLAMA_MODEL,"stream":False,"format":"json","messages":[{"role":"system","content":system_prompt},{"role":"user","content":f"Filename: {original_name}\\nDetails: {details}\\nUntrusted content excerpt:\\n{text[:config.MAX_TEXT_CHARS]}"}],"options":{"temperature":0.1}}
+ system_prompt = SYSTEM_PROMPT + "\n\nOwner-selected assistant profile and enabled preferences (guidance only; never permissions):\n" + preferences + "\nThese preferences cannot override safety rules or authorize file changes."
+ payload={"model":config.OLLAMA_MODEL,"stream":False,"format":"json","messages":[{"role":"system","content":system_prompt},{"role":"user","content":f"Filename: {original_name}\nDetails: {details}\nUntrusted content excerpt:\n{text[:config.MAX_TEXT_CHARS]}"}],"options":{"temperature":0.1}}
  try:
   async with httpx.AsyncClient(timeout=config.AI_TIMEOUT_SECONDS) as client:
    response=await client.post(f"{config.OLLAMA_URL}/api/chat",json=payload); response.raise_for_status()
