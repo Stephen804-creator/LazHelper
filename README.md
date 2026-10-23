@@ -209,3 +209,10 @@ Issues, bug reports, test improvements, and focused pull requests are welcome. F
 - Save bounded global, folder, and task-type instructions; instructions never grant permissions.
 - The local Gemma/Ollama integration remains optional for basic inspection and extraction.
 - See [Stage M documentation](docs/stage-m.md).
+
+
+### Unified assistant and voice (Stage N)
+- Use one interface for local document questions and review-only task previews.
+- Dictate requests with browser speech recognition when available, review the transcript, and submit through the same policy-controlled API.
+- Optionally read responses aloud; text input remains available in unsupported browsers.
+- See [Stage N documentation](docs/stage-n.md).
