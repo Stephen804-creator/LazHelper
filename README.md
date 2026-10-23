@@ -194,3 +194,10 @@ The suite includes tests for scanning and path confinement, organisation safegua
 ## Contributing
 
 Issues, bug reports, test improvements, and focused pull requests are welcome. For changes that touch file operations, preserve the core contract: stay inside the configured workspace, show a preview, require explicit approval for moves, refuse overwrites, and never delete user files automatically.
+
+
+### Portable organisation plans (Stage L)
+- Export reviewable organisation plans as versioned JSON or CSV, including destination explanations, confidence scores, and source-file metadata.
+- Import plans from another session or machine and validate workspace-relative paths, source freshness, and destination collisions.
+- Imports are preview-only. They never move files, and each move still requires explicit approval through the existing apply flow.
+- See [Stage L documentation](docs/stage-l.md).
