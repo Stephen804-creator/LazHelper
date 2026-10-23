@@ -29,6 +29,8 @@ CAPABILITIES = {
 }
 DEFAULT_POLICY = {key: False for key in CAPABILITIES}
 DEFAULT_POLICY.update({
+    "read_metadata": True,
+    "read_content": True,
     "mode": "preview",
     "scope": "configured_workspace",
 })
