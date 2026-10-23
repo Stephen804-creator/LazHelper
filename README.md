@@ -201,3 +201,11 @@ Issues, bug reports, test improvements, and focused pull requests are welcome. F
 - Import plans from another session or machine and validate workspace-relative paths, source freshness, and destination collisions.
 - Imports are preview-only. They never move files, and each move still requires explicit approval through the existing apply flow.
 - See [Stage L documentation](docs/stage-l.md).
+
+
+### Owner permissions and instructions (Stage M)
+- Configure which file capabilities are enabled; file-changing capabilities start disabled.
+- API-level policy enforcement applies to direct requests as well as the browser interface.
+- Save bounded global, folder, and task-type instructions; instructions never grant permissions.
+- The local Gemma/Ollama integration remains optional for basic inspection and extraction.
+- See [Stage M documentation](docs/stage-m.md).
