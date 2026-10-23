@@ -109,7 +109,13 @@
     try{const data=await request("/api/instructions");items=data.items||[];renderRules();show(ruleStatus,items.length+" instruction rule(s) loaded.");}
     catch(error){show(ruleStatus,error.message,true);}
   }
-  scope.addEventListener("change",()=>{\n    path.disabled=scope.value==="global";\n    path.required=scope.value!=="global";\n    path.maxLength=scope.value==="folder"?500:40;\n    pathLabel.textContent=scope.value==="folder"?"Folder path (inside the configured workspace)":scope.value==="task"?"Task type (e.g. analysis, question, command_preview)":"No additional scope needed";\n    path.placeholder=scope.value==="folder"?"e.g. School/Assignments":scope.value==="task"?"e.g. analysis":"Not required";\n  });
+  scope.addEventListener("change",()=>{
+    path.disabled=scope.value==="global";
+    path.required=scope.value!=="global";
+    path.maxLength=scope.value==="folder"?500:40;
+    pathLabel.textContent=scope.value==="folder"?"Folder path (inside the configured workspace)":scope.value==="task"?"Task type (e.g. analysis, question, command_preview)":"No additional scope needed";
+    path.placeholder=scope.value==="folder"?"e.g. School/Assignments":scope.value==="task"?"e.g. analysis":"Not required";
+  });
   scope.dispatchEvent(new Event("change"));
   add.addEventListener("click",()=>{
     const value=instruction.value.trim();
