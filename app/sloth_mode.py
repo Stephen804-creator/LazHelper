@@ -2,13 +2,11 @@
 from __future__ import annotations
 import asyncio
 import json
-import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
 from . import config, organizer
 from .scanner import safe_workspace_path, scan_folder, UnsafePath
 
-DB_PATH = organizer.DB_PATH
 DEFAULTS = {"enabled": False, "inbox": "inbox", "interval_minutes": 60, "last_run": None, "last_summary": None}
 
 def _now():
