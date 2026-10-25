@@ -17,7 +17,6 @@ from . import config, database, organizer, workspace_intelligence
 from .extractor import extract_file
 from .scanner import safe_file_path, safe_workspace_path, UnsafePath
 
-DB_PATH = config.PROJECT_ROOT / ".lazhelper_extended.sqlite3"
 MAX_ARCHIVE_ENTRIES = 1000
 MAX_ARCHIVE_UNCOMPRESSED = 128 * 1024 * 1024
 MAX_ARCHIVE_MEMBER_BYTES = 8 * 1024 * 1024
@@ -32,7 +31,7 @@ def _now() -> str:
 
 
 def _connect():
-    con = database.connect(DB_PATH, timeout=10)
+    con = database.connect(timeout=10)
     con.execute("""CREATE TABLE IF NOT EXISTS project_workspaces (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
