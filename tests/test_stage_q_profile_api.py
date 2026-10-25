@@ -9,7 +9,7 @@ def test_profile_and_memory_api_do_not_enable_file_permissions(tmp_path, monkeyp
     from fastapi.testclient import TestClient
     from app.main import app
 
-    monkeypatch.setattr(organizer, "DB_PATH", tmp_path / "state.sqlite3")
+    monkeypatch.setattr(organizer, "DB_SCHEMA", f"test_{tmp_path.name}")
     with TestClient(app) as client:
         response = client.put("/api/assistant-profile", json={"profile": "research", "memory_enabled": True})
         assert response.status_code == 200
