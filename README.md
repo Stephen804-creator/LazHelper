@@ -24,8 +24,8 @@ LazHelper is designed to keep the user in control. Recommendations and plans are
 - Refuse destination collisions rather than silently overwrite files.
 - Detect exact, byte-for-byte duplicates using SHA-256.
 - Place uncertain files in a persistent **Not Sure** review queue.
-- Keep a local operation journal and support undo when the original path is available.
-- Store personal category preferences locally.
+- Keep a persistent operation journal in PostgreSQL and support undo when the original path is available.
+- Store personal category preferences in PostgreSQL.
 
 ### Workspace intelligence (Stages A–E)
 - Find explainable candidate relationships between files using shared filename terms, folder context, and likely version suffixes.
