@@ -1,8 +1,8 @@
 """PostgreSQL-only database access for LazHelper.
 
-The adapter translates the application's existing positional SQL placeholders and
-auto-increment declarations so every environment uses the same PostgreSQL database.
-A missing DATABASE_URL is an error; the app never silently creates local database files.
+The adapter translates the application's legacy positional SQL placeholders and
+auto-increment declarations so every environment uses PostgreSQL. A validated schema
+name isolates application state and automated tests without creating local DB files.
 """
 from __future__ import annotations
 
@@ -11,6 +11,7 @@ import re
 from typing import Any
 
 _AUTOINCREMENT_INSERTS = {"operation_journal", "project_workspaces", "saved_workflows"}
+_SCHEMA_RE = re.compile(r"^[a-zA-Z_][a-zA-Z0-9_]{0,62}$")
 
 
 def _database_url() -> str:
@@ -34,7 +35,7 @@ def _postgres_sql(statement: str) -> str:
         statement,
         flags=re.IGNORECASE,
     )
-    # Application queries use positional '?' placeholders and no '?' literals.
+    # Existing application queries use positional '?' placeholders and no '?' literals.
     return sql.replace("?", "%s")
 
 
@@ -127,8 +128,10 @@ class _PostgresConnection:
         return False
 
 
-def connect(timeout: int = 10):
-    """Open PostgreSQL; never fall back to a local file database."""
+def connect(schema: str = "lazhelper", timeout: int = 10):
+    """Open PostgreSQL and set a validated schema; never create a local database file."""
+    if not _SCHEMA_RE.fullmatch(schema):
+        raise ValueError("Database schema name is invalid.")
     url = _database_url()
     try:
         import psycopg
@@ -139,4 +142,11 @@ def connect(timeout: int = 10):
         ) from exc
 
     raw = psycopg.connect(url, connect_timeout=timeout, row_factory=dict_row)
+    try:
+        with raw.cursor() as cursor:
+            cursor.execute(f'CREATE SCHEMA IF NOT EXISTS "{schema}"')
+            cursor.execute(f'SET search_path TO "{schema}"')
+    except Exception:
+        raw.close()
+        raise
     return _PostgresConnection(raw)
