@@ -16,7 +16,7 @@ The Blueprint connects the web service to PostgreSQL using Render's private conn
 ## Database behavior
 
 - Local development must also use a PostgreSQL database; configure `DATABASE_URL` in your local environment.
-- When `DATABASE_URL` is set, both application state modules use the same PostgreSQL database. This includes preferences, operation history, review queue, owner policy/instructions, assistant profile, activity history, project workspaces, and saved workflows.
+- All persistent application state uses the same PostgreSQL database; startup fails if no PostgreSQL URL is configured. This includes preferences, operation history, review queue, owner policy/instructions, assistant profile, activity history, project workspaces, and saved workflows.
 - PostgreSQL records survive web-service restarts and redeployments. The database is separate from the web service's ephemeral filesystem.
 - The default Blueprint uses Render's free PostgreSQL plan. Render currently expires free PostgreSQL databases 30 days after creation. Upgrade the database before expiry if the records must be retained longer. Free web services also sleep when idle and have an ephemeral filesystem.
 
