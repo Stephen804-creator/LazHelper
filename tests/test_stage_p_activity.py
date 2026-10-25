@@ -21,7 +21,7 @@ def test_activity_records_api_result_without_request_body(tmp_path, monkeypatch)
 
 def test_activity_retention_and_inflight_state(tmp_path, monkeypatch):
     from app import activity
-    monkeypatch.setattr(organizer, "DB_PATH", tmp_path / "state.sqlite3")
+    monkeypatch.setattr(organizer, "DB_SCHEMA", f"test_{tmp_path.name}")
     token = activity.begin("POST", "/api/analyze")
     assert token
     assert any(row["path"] == "/api/analyze" for row in activity.history()["active"])
