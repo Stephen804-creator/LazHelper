@@ -8,7 +8,7 @@ def test_activity_records_api_result_without_request_body(tmp_path, monkeypatch)
     root = tmp_path / "workspace"
     root.mkdir()
     monkeypatch.setattr(config, "ALLOWED_ROOT", root)
-    monkeypatch.setattr(organizer, "DB_SCHEMA", f"test_{tmp_path.name}")
+    monkeypatch.setattr(organizer, "DB_SCHEMA", f"t_{abs(hash(tmp_path.name))}")
     with TestClient(app) as client:
         client.get("/api/health")
         response = client.get("/api/activity?limit=10")
@@ -21,7 +21,7 @@ def test_activity_records_api_result_without_request_body(tmp_path, monkeypatch)
 
 def test_activity_retention_and_inflight_state(tmp_path, monkeypatch):
     from app import activity
-    monkeypatch.setattr(organizer, "DB_SCHEMA", f"test_{tmp_path.name}")
+    monkeypatch.setattr(organizer, "DB_SCHEMA", f"t_{abs(hash(tmp_path.name))}")
     token = activity.begin("POST", "/api/analyze")
     assert token
     assert any(row["path"] == "/api/analyze" for row in activity.history()["active"])
