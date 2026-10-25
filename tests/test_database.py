@@ -26,6 +26,12 @@ def test_database_url_normalizes_postgres_scheme(monkeypatch):
     assert database._database_url() == "postgresql://user:pass@host:5432/app"
 
 
+def test_database_rejects_invalid_schema(monkeypatch):
+    monkeypatch.setenv("DATABASE_URL", "postgresql://user:pass@host/app")
+    with pytest.raises(ValueError, match="schema name is invalid"):
+        database.connect(schema="bad-schema")
+
+
 def test_database_rejects_non_postgres_url(monkeypatch):
     monkeypatch.setenv("DATABASE_URL", "mysql://user:pass@host/app")
     with pytest.raises(RuntimeError, match="must be a PostgreSQL"):
