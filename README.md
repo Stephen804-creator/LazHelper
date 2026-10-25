@@ -168,7 +168,7 @@ LazHelper is designed around local processing and explicit user control, but it 
 - **Metadata-only insights:** workspace insights use file paths/names, extensions, and sizes rather than uploading file contents.
 - **Local AI:** when enabled, extracted content used for a recommendation is sent to the configured Ollama service. Review what you process and configure the service appropriately.
 - **Processing limits:** size, depth, text, and file-count limits help constrain resource use.
-- **No public deployment by default:** the app does not provide authentication. Keep it bound to loopback and do not expose the development server directly to the internet.
+- **No authentication:** LazHelper does not provide user authentication yet. Use only non-sensitive sample files in a public demo; never expose private workspace content or credentials.
 
 Image OCR is not currently enabled; images are represented by metadata. ZIP files are inventoried rather than extracted, and source files are treated as text rather than executed.
 
