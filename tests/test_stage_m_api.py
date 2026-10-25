@@ -9,7 +9,7 @@ def test_api_blocks_move_until_owner_enables_it(tmp_path, monkeypatch):
     root.mkdir()
     (root / "note.txt").write_text("hello", encoding="utf-8")
     monkeypatch.setattr(config, "ALLOWED_ROOT", root)
-    monkeypatch.setattr(organizer, "DB_SCHEMA", f"test_{tmp_path.name}")
+    monkeypatch.setattr(organizer, "DB_SCHEMA", f"t_{abs(hash(tmp_path.name))}")
     with TestClient(app) as client:
         response = client.post("/api/organize/apply", json={
             "items": [{"source": "note.txt", "destination": "Documents/note.txt", "approved": True}]
@@ -30,7 +30,7 @@ def test_move_permission_does_not_imply_undo_permission(tmp_path, monkeypatch):
     root.mkdir()
     (root / "note.txt").write_text("hello", encoding="utf-8")
     monkeypatch.setattr(config, "ALLOWED_ROOT", root)
-    monkeypatch.setattr(organizer, "DB_SCHEMA", f"test_{tmp_path.name}")
+    monkeypatch.setattr(organizer, "DB_SCHEMA", f"t_{abs(hash(tmp_path.name))}")
     with TestClient(app) as client:
         client.put("/api/permissions", json={"move_files": True})
         moved = client.post("/api/organize/apply", json={
