@@ -9,7 +9,7 @@ def test_api_blocks_move_until_owner_enables_it(tmp_path, monkeypatch):
     root.mkdir()
     (root / "note.txt").write_text("hello", encoding="utf-8")
     monkeypatch.setattr(config, "ALLOWED_ROOT", root)
-    monkeypatch.setattr(organizer, "DB_PATH", tmp_path / "state.sqlite3")
+    monkeypatch.setattr(organizer, "DB_SCHEMA", f"test_{tmp_path.name}")
     with TestClient(app) as client:
         response = client.post("/api/organize/apply", json={
             "items": [{"source": "note.txt", "destination": "Documents/note.txt", "approved": True}]
