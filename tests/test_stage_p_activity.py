@@ -8,7 +8,7 @@ def test_activity_records_api_result_without_request_body(tmp_path, monkeypatch)
     root = tmp_path / "workspace"
     root.mkdir()
     monkeypatch.setattr(config, "ALLOWED_ROOT", root)
-    monkeypatch.setattr(organizer, "DB_PATH", tmp_path / "state.sqlite3")
+    monkeypatch.setattr(organizer, "DB_SCHEMA", f"test_{tmp_path.name}")
     with TestClient(app) as client:
         client.get("/api/health")
         response = client.get("/api/activity?limit=10")
