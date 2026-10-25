@@ -9,7 +9,7 @@ def test_profile_and_memory_api_do_not_enable_file_permissions(tmp_path, monkeyp
     from fastapi.testclient import TestClient
     from app.main import app
 
-    monkeypatch.setattr(organizer, "DB_SCHEMA", f"test_{tmp_path.name}")
+    monkeypatch.setattr(organizer, "DB_SCHEMA", f"t_{abs(hash(tmp_path.name))}")
     with TestClient(app) as client:
         response = client.put("/api/assistant-profile", json={"profile": "research", "memory_enabled": True})
         assert response.status_code == 200
@@ -22,7 +22,7 @@ def test_profile_and_memory_api_do_not_enable_file_permissions(tmp_path, monkeyp
 
 
 def test_gemma_prompt_uses_opt_in_saved_preferences(tmp_path, monkeypatch):
-    monkeypatch.setattr(organizer, "DB_SCHEMA", f"test_{tmp_path.name}")
+    monkeypatch.setattr(organizer, "DB_SCHEMA", f"t_{abs(hash(tmp_path.name))}")
     monkeypatch.setattr(config, "OLLAMA_MODEL", "gemma3:1b")
     policies.save_instructions([
         {"scope": "global", "instruction": "Use short summaries."},
@@ -65,7 +65,7 @@ def test_gemma_prompt_uses_opt_in_saved_preferences(tmp_path, monkeypatch):
 
 
 def test_disabled_memory_does_not_add_saved_rules(tmp_path, monkeypatch):
-    monkeypatch.setattr(organizer, "DB_SCHEMA", f"test_{tmp_path.name}")
+    monkeypatch.setattr(organizer, "DB_SCHEMA", f"t_{abs(hash(tmp_path.name))}")
     policies.save_instructions([{"scope": "global", "instruction": "Private preference."}])
     policies.update_assistant_profile({"memory_enabled": False})
     context = policies.instruction_context(".", "analysis")
