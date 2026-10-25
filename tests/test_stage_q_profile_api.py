@@ -22,7 +22,7 @@ def test_profile_and_memory_api_do_not_enable_file_permissions(tmp_path, monkeyp
 
 
 def test_gemma_prompt_uses_opt_in_saved_preferences(tmp_path, monkeypatch):
-    monkeypatch.setattr(organizer, "DB_PATH", tmp_path / "state.sqlite3")
+    monkeypatch.setattr(organizer, "DB_SCHEMA", f"test_{tmp_path.name}")
     monkeypatch.setattr(config, "OLLAMA_MODEL", "gemma3:1b")
     policies.save_instructions([
         {"scope": "global", "instruction": "Use short summaries."},
@@ -65,7 +65,7 @@ def test_gemma_prompt_uses_opt_in_saved_preferences(tmp_path, monkeypatch):
 
 
 def test_disabled_memory_does_not_add_saved_rules(tmp_path, monkeypatch):
-    monkeypatch.setattr(organizer, "DB_PATH", tmp_path / "state.sqlite3")
+    monkeypatch.setattr(organizer, "DB_SCHEMA", f"test_{tmp_path.name}")
     policies.save_instructions([{"scope": "global", "instruction": "Private preference."}])
     policies.update_assistant_profile({"memory_enabled": False})
     context = policies.instruction_context(".", "analysis")
