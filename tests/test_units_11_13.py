@@ -11,8 +11,7 @@ def workspace(tmp_path, monkeypatch):
     (root / "reports").mkdir()
     (root / "reports" / "table.csv").write_text("name,value\nalpha,1\n", encoding="utf-8")
     monkeypatch.setattr(config, "ALLOWED_ROOT", root)
-    monkeypatch.setattr(organizer, "DB_PATH", tmp_path / "state.sqlite3")
-    monkeypatch.setattr(sloth_mode, "DB_PATH", tmp_path / "state.sqlite3")
+    monkeypatch.setattr(organizer, "DB_SCHEMA", f"test_{tmp_path.name}")
     return root
 
 def test_sloth_mode_is_disabled_by_default(workspace):
