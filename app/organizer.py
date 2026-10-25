@@ -11,7 +11,7 @@ import shutil
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
-from . import database
+from . import config, database
 from .scanner import safe_file_path, UnsafePath
 
 DEFAULT_PREFERENCES = {
