@@ -9,7 +9,7 @@ def test_task_preview_is_review_only(tmp_path, monkeypatch):
     root.mkdir()
     (root / "notes.txt").write_text("Cloud computing networking notes.", encoding="utf-8")
     monkeypatch.setattr(config, "ALLOWED_ROOT", root)
-    monkeypatch.setattr(organizer, "DB_SCHEMA", f"test_{tmp_path.name}")
+    monkeypatch.setattr(organizer, "DB_SCHEMA", f"t_{abs(hash(tmp_path.name))}")
     with TestClient(app) as client:
         response = client.post("/api/commands/preview", json={
             "command": "find cloud computing notes", "relative_path": "."
@@ -28,7 +28,7 @@ def test_question_returns_local_evidence_only(tmp_path, monkeypatch):
         "Virtual networks connect cloud resources using isolated network ranges.", encoding="utf-8"
     )
     monkeypatch.setattr(config, "ALLOWED_ROOT", root)
-    monkeypatch.setattr(organizer, "DB_SCHEMA", f"test_{tmp_path.name}")
+    monkeypatch.setattr(organizer, "DB_SCHEMA", f"t_{abs(hash(tmp_path.name))}")
     with TestClient(app) as client:
         response = client.post("/api/knowledge/ask", json={
             "question": "What do my notes say about virtual networks?", "relative_path": "."
