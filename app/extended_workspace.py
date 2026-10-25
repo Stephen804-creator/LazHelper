@@ -30,8 +30,10 @@ def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+DB_SCHEMA = "lazhelper_workspace"
+
 def _connect():
-    con = database.connect(timeout=10)
+    con = database.connect(schema=DB_SCHEMA, timeout=10)
     con.execute("""CREATE TABLE IF NOT EXISTS project_workspaces (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
