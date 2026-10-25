@@ -5,6 +5,7 @@ development stays unchanged while hosted state can live in one PostgreSQL databa
 """
 from __future__ import annotations
 
+import os
 import re
 import sqlite3
 from pathlib import Path
@@ -15,8 +16,8 @@ _AUTOINCREMENT_INSERTS = {"operation_journal", "project_workspaces", "saved_work
 
 def _database_url() -> str | None:
     value = (
-        __import__("os").environ.get("DATABASE_URL")
-        or __import__("os").environ.get("LAZHELPER_DATABASE_URL")
+        os.environ.get("DATABASE_URL")
+        or os.environ.get("LAZHELPER_DATABASE_URL")
         or ""
     ).strip()
     if not value:
