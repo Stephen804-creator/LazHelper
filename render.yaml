@@ -1,0 +1,30 @@
+# One FastAPI web service serves both the UI and API; this is not a static-site deployment.
+services:
+  - type: web
+    name: lazhelper
+    runtime: python
+    plan: free
+    region: oregon
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: lazhelper-db
+          property: connectionString
+      - key: LAZHELPER_ALLOWED_ROOT
+        value: ./workspace
+      - key: LAZHELPER_OLLAMA_URL
+        value: http://127.0.0.1:11434
+      - key: LAZHELPER_OLLAMA_MODEL
+        value: gemma3:1b
+
+databases:
+  - name: lazhelper-db
+    databaseName: lazhelper
+    user: lazhelper
+    plan: free
+    region: oregon
+    # Keep the database on Render's private network; the web service receives DATABASE_URL.
+    ipAllowList: []
