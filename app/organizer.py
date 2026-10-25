@@ -27,8 +27,10 @@ DEFAULT_PREFERENCES = {
     "review_all_moves": True,
     "include_date_in_plan": False,
 }
+DB_SCHEMA = "lazhelper"
+
 def _connect():
-    con = database.connect(timeout=10)
+    con = database.connect(schema=DB_SCHEMA, timeout=10)
     con.execute("""CREATE TABLE IF NOT EXISTS operation_journal (
         id INTEGER PRIMARY KEY AUTOINCREMENT, action TEXT NOT NULL,
         source_path TEXT NOT NULL, destination_path TEXT, status TEXT NOT NULL,
