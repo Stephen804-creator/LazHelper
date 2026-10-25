@@ -1,6 +1,6 @@
 """Owner-controlled capabilities and reusable instruction policies.
 
-This module stores policy in the existing local SQLite state database. It is not an
+This module stores policy in the shared PostgreSQL database. It is not an
 authentication system: run the local app only for trusted users. Permissions constrain
 what the application API may do inside the configured workspace.
 """
@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import json
 import re
-import sqlite3
 from datetime import datetime, timezone
 from typing import Any
 
