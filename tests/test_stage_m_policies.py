@@ -5,7 +5,7 @@ from app import config, organizer, policies
 
 @pytest.fixture
 def policy_db(tmp_path, monkeypatch):
-    monkeypatch.setattr(organizer, "DB_PATH", tmp_path / "policy.sqlite3")
+    monkeypatch.setattr(organizer, "DB_SCHEMA", f"test_{tmp_path.name}")
     return tmp_path
 
 
