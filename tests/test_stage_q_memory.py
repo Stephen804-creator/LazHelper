@@ -5,7 +5,7 @@ from app import organizer, policies, profiles
 
 @pytest.fixture
 def memory_db(tmp_path, monkeypatch):
-    monkeypatch.setattr(organizer, "DB_SCHEMA", f"test_{tmp_path.name}")
+    monkeypatch.setattr(organizer, "DB_SCHEMA", f"t_{abs(hash(tmp_path.name))}")
 
 
 def test_profile_does_not_grant_permissions(memory_db):
