@@ -38,6 +38,21 @@ def _postgres_sql(statement: str) -> str:
     return sql.replace("?", "%s")
 
 
+class _CompatRow(dict):
+    """Mapping row that also supports SQLite-style positional access (row[0])."""
+    def __getitem__(self, key):
+        if isinstance(key, int):
+            try:
+                return list(self.values())[key]
+            except IndexError:
+                raise IndexError(key) from None
+        return super().__getitem__(key)
+
+
+def _compat_row(row):
+    return _CompatRow(row) if isinstance(row, dict) else row
+
+
 class _PostgresCursor:
     def __init__(self, cursor: Any):
         self._cursor = cursor
@@ -56,18 +71,25 @@ class _PostgresCursor:
             self.lastrowid = int(row["id"]) if row and row.get("id") is not None else None
         return self
 
+    def executemany(self, statement: str, parameter_sets):
+        self._cursor.executemany(
+            _postgres_sql(statement),
+            [tuple(parameters or ()) for parameters in parameter_sets],
+        )
+        return self
+
     @property
     def rowcount(self) -> int:
         return self._cursor.rowcount
 
     def fetchone(self):
-        return self._cursor.fetchone()
+        return _compat_row(self._cursor.fetchone())
 
     def fetchall(self):
-        return self._cursor.fetchall()
+        return [_compat_row(row) for row in self._cursor.fetchall()]
 
     def __iter__(self):
-        return iter(self._cursor)
+        return (_compat_row(row) for row in self._cursor)
 
 
 class _PostgresConnection:
@@ -77,6 +99,10 @@ class _PostgresConnection:
     def execute(self, statement: str, parameters: tuple | list = ()):
         cursor = _PostgresCursor(self._connection.cursor())
         return cursor.execute(statement, parameters)
+
+    def executemany(self, statement: str, parameter_sets):
+        cursor = _PostgresCursor(self._connection.cursor())
+        return cursor.executemany(statement, parameter_sets)
 
     def commit(self) -> None:
         self._connection.commit()
