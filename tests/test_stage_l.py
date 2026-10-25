@@ -14,7 +14,7 @@ def plan_workspace(tmp_path, monkeypatch):
     (root / "notes.txt").write_text("Cloud computing notes.", encoding="utf-8")
     (root / "table.csv").write_text("a,b\n1,2\n", encoding="utf-8")
     monkeypatch.setattr(config, "ALLOWED_ROOT", root)
-    monkeypatch.setattr(organizer, "DB_PATH", tmp_path / "organizer.sqlite3")
+    monkeypatch.setattr(organizer, "DB_SCHEMA", f"test_{tmp_path.name}")
     return root
 
 
