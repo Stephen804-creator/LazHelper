@@ -28,7 +28,7 @@ def test_question_returns_local_evidence_only(tmp_path, monkeypatch):
         "Virtual networks connect cloud resources using isolated network ranges.", encoding="utf-8"
     )
     monkeypatch.setattr(config, "ALLOWED_ROOT", root)
-    monkeypatch.setattr(organizer, "DB_PATH", tmp_path / "state.sqlite3")
+    monkeypatch.setattr(organizer, "DB_SCHEMA", f"test_{tmp_path.name}")
     with TestClient(app) as client:
         response = client.post("/api/knowledge/ask", json={
             "question": "What do my notes say about virtual networks?", "relative_path": "."
