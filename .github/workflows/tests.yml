@@ -6,6 +6,22 @@ on:
 jobs:
   tests:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: lazhelper
+          POSTGRES_PASSWORD: lazhelper_test_password
+          POSTGRES_DB: lazhelper_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U lazhelper -d lazhelper_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://lazhelper:lazhelper_test_password@localhost:5432/lazhelper_test
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -16,4 +32,4 @@ jobs:
       - run: pip install -r requirements.txt
       - run: python -m pytest -q
         env:
-          PYTHONPATH: .
+          PYTHONPATH: .\n          DATABASE_URL: postgresql://lazhelper:lazhelper_test_password@localhost:5432/lazhelper_test
