@@ -22,8 +22,8 @@ def workspace(tmp_path, monkeypatch):
         "Research findings and cloud computing architecture are documented here.", encoding="utf-8"
     )
     monkeypatch.setattr(config, "ALLOWED_ROOT", root)
-    monkeypatch.setattr(ew, "DB_PATH", tmp_path / "extended.sqlite3")
-    monkeypatch.setattr(organizer, "DB_PATH", tmp_path / "organizer.sqlite3")
+    monkeypatch.setattr(ew, "DB_SCHEMA", f"test_{tmp_path.name}_workspace")
+    monkeypatch.setattr(organizer, "DB_SCHEMA", f"test_{tmp_path.name}_organizer")
     return root
 
 
