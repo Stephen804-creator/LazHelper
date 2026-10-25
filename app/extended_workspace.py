@@ -8,13 +8,12 @@ import hashlib
 import io
 import json
 import re
-import sqlite3
 import zipfile
 from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
 from typing import Any
 
-from . import config, organizer, workspace_intelligence
+from . import config, database, organizer, workspace_intelligence
 from .extractor import extract_file
 from .scanner import safe_file_path, safe_workspace_path, UnsafePath
 
@@ -33,9 +32,7 @@ def _now() -> str:
 
 
 def _connect():
-    con = sqlite3.connect(DB_PATH, timeout=10)
-    con.row_factory = sqlite3.Row
-    con.execute("PRAGMA journal_mode=WAL")
+    con = database.connect(DB_PATH, timeout=10)
     con.execute("""CREATE TABLE IF NOT EXISTS project_workspaces (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
