@@ -1,34 +1,33 @@
-"""Small database adapter: SQLite locally, Render PostgreSQL when DATABASE_URL is set.
+"""PostgreSQL-only database access for LazHelper.
 
-The adapter preserves the application's existing sqlite-style SQL API so local
-development stays unchanged while hosted state can live in one PostgreSQL database.
+The adapter translates the application's existing positional SQL placeholders and
+auto-increment declarations so every environment uses the same PostgreSQL database.
+A missing DATABASE_URL is an error; the app never silently creates local database files.
 """
 from __future__ import annotations
 
 import os
 import re
-import sqlite3
-from pathlib import Path
 from typing import Any
 
 _AUTOINCREMENT_INSERTS = {"operation_journal", "project_workspaces", "saved_workflows"}
 
 
-def _database_url() -> str | None:
-    value = (
-        os.environ.get("DATABASE_URL")
-        or os.environ.get("LAZHELPER_DATABASE_URL")
-        or ""
-    ).strip()
+def _database_url() -> str:
+    value = (os.environ.get("DATABASE_URL") or os.environ.get("LAZHELPER_DATABASE_URL") or "").strip()
     if not value:
-        return None
+        raise RuntimeError(
+            "DATABASE_URL is required. Configure a PostgreSQL connection before starting LazHelper."
+        )
     if value.startswith("postgres://"):
         value = "postgresql://" + value[len("postgres://"):]
-    return value
+    if not value.startswith(("postgresql://", "postgresql+psycopg://")):
+        raise RuntimeError("DATABASE_URL must be a PostgreSQL connection URL.")
+    return value.replace("postgresql+psycopg://", "postgresql://", 1)
 
 
 def _postgres_sql(statement: str) -> str:
-    """Translate the small subset of SQLite SQL syntax used by LazHelper."""
+    """Translate legacy application SQL syntax into PostgreSQL syntax."""
     sql = re.sub(
         r"\bINTEGER\s+PRIMARY\s+KEY\s+AUTOINCREMENT\b",
         "BIGSERIAL PRIMARY KEY",
@@ -40,7 +39,7 @@ def _postgres_sql(statement: str) -> str:
 
 
 class _CompatRow(dict):
-    """Mapping row that also supports SQLite-style positional access (row[0])."""
+    """Mapping row that also supports positional access for existing call sites."""
     def __getitem__(self, key):
         if isinstance(key, int):
             try:
@@ -128,21 +127,15 @@ class _PostgresConnection:
         return False
 
 
-def connect(sqlite_path: str | Path, timeout: int = 10):
-    """Connect to PostgreSQL when DATABASE_URL is set, otherwise use local SQLite."""
+def connect(timeout: int = 10):
+    """Open PostgreSQL; never fall back to a local file database."""
     url = _database_url()
-    if not url:
-        connection = sqlite3.connect(sqlite_path, timeout=timeout)
-        connection.row_factory = sqlite3.Row
-        return connection
-
     try:
         import psycopg
         from psycopg.rows import dict_row
-    except ImportError as exc:  # pragma: no cover - exercised only in a broken hosted install
+    except ImportError as exc:  # pragma: no cover - broken deployment environment
         raise RuntimeError(
-            "DATABASE_URL is configured but psycopg is not installed. "
-            "Install the dependencies from requirements.txt."
+            "psycopg is required. Install the dependencies from requirements.txt."
         ) from exc
 
     raw = psycopg.connect(url, connect_timeout=timeout, row_factory=dict_row)
