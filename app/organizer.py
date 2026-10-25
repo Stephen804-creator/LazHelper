@@ -11,13 +11,9 @@ import shutil
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
-from . import config, database
+from . import database
 from .scanner import safe_file_path, UnsafePath
 
-_new_db_path = config.PROJECT_ROOT / ".lazhelper_state.sqlite3"
-_legacy_db_path = config.PROJECT_ROOT / ".lazydesk_state.sqlite3"
-# Preserve existing local state after the project rename.
-DB_PATH = _legacy_db_path if _legacy_db_path.exists() and not _new_db_path.exists() else _new_db_path
 DEFAULT_PREFERENCES = {
     "category_rules": {
         "Documents": [".pdf", ".docx", ".txt", ".md", ".rtf"],
@@ -32,7 +28,7 @@ DEFAULT_PREFERENCES = {
     "include_date_in_plan": False,
 }
 def _connect():
-    con = database.connect(DB_PATH, timeout=10)
+    con = database.connect(timeout=10)
     con.execute("""CREATE TABLE IF NOT EXISTS operation_journal (
         id INTEGER PRIMARY KEY AUTOINCREMENT, action TEXT NOT NULL,
         source_path TEXT NOT NULL, destination_path TEXT, status TEXT NOT NULL,
