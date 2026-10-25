@@ -191,6 +191,12 @@ The suite includes tests for scanning and path confinement, organisation safegua
 - `docs/stages-f-k.md` — recovery export, project profiles, ZIP inspection, command previews, local evidence retrieval, and read-only workflows.
 - `/docs` — interactive API documentation when the local server is running.
 
+## Render deployment
+
+A Render Blueprint is provided in `render.yaml`. It creates one Python Web Service that serves both the FastAPI API and the browser interface, plus a PostgreSQL database for persistent application state. See [docs/render-deployment.md](docs/render-deployment.md) before deploying.
+
+The Blueprint uses the free web-service and PostgreSQL plans for a competition/demo deployment. Render's free PostgreSQL databases expire after 30 days, and the web service filesystem is ephemeral. PostgreSQL preserves application records across redeploys, but it does not preserve files in the server-side workspace. The hosted service also cannot access files on a visitor's personal computer, and local Ollama/Gemma recommendations are unavailable unless a reachable Ollama runtime is configured. Because LazHelper does not yet provide authentication, use only non-sensitive demo files.
+
 ## Contributing
 
 Issues, bug reports, test improvements, and focused pull requests are welcome. For changes that touch file operations, preserve the core contract: stay inside the configured workspace, show a preview, require explicit approval for moves, refuse overwrites, and never delete user files automatically.
