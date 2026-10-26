@@ -86,7 +86,7 @@ Activate the virtual environment.
 
 **Windows PowerShell**
 ```powershell
-.venv\Scripts\Activate.ps1
+.\.venv\Scripts\Activate.ps1
 ```
 
 **macOS / Linux**
