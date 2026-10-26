@@ -16,7 +16,7 @@ services:
       - key: LAZHELPER_ALLOWED_ROOT
         value: ./workspace
       - key: LAZHELPER_OLLAMA_URL
-        value: http://127.0.0.1:11434
+        sync: false
       - key: LAZHELPER_OLLAMA_MODEL
         value: gemma3:1b
 
