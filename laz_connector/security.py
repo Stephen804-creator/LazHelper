@@ -19,12 +19,15 @@ class UnsafePath(ValueError):
 
 
 def _protected_roots() -> list[Path]:
-    roots: list[Path] = []
     if os.name == "nt":
-        roots.extend([Path(os.environ.get("WINDIR", r"C:\\Windows")), Path(os.environ.get("ProgramFiles", r"C:\\Program Files")), Path(os.environ.get("ProgramFiles(x86)", r"C:\\Program Files (x86)")), Path(os.environ.get("ProgramData", r"C:\\ProgramData"))])
-        roots.append(Path(os.environ.get("SystemDrive", "C:") + "\\"))
+        roots = [
+            Path(os.environ.get("WINDIR", r"C:\Windows")),
+            Path(os.environ.get("ProgramFiles", r"C:\Program Files")),
+            Path(os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)")),
+            Path(os.environ.get("ProgramData", r"C:\ProgramData")),
+        ]
     else:
-        roots.extend(Path(p) for p in ("/etc", "/bin", "/sbin", "/usr", "/var", "/boot", "/proc", "/sys", "/dev", "/System", "/Library"))
+        roots = [Path(p) for p in ("/etc", "/bin", "/sbin", "/usr", "/var", "/boot", "/proc", "/sys", "/dev", "/System", "/Library")]
     out = []
     for root in roots:
         try:
