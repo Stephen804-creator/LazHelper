@@ -1,5 +1,4 @@
 # Render Blueprint for Laz Helper.
-# This configuration matches the current SQLite-backed application.
 services:
   - type: web
     name: laz-helper
@@ -28,9 +27,3 @@ services:
         value: gemma3:1b
       - key: LAZ_HELPER_AI_TIMEOUT_SECONDS
         value: "45"
-
-# The current application stores its journal and preferences in SQLite and
-# uses the workspace directory for files. Render's free filesystem is ephemeral,
-# so those local changes may not survive restarts or redeployments.
-# The service has no authentication or authorization. Keep it private until
-# access controls are available; do not expose it as a public multi-user service.
