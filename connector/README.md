@@ -19,7 +19,7 @@ For local development, the connector allows `http://127.0.0.1:8000` and `http://
 
 1. Start the connector locally.
 2. Open Laz Helper and choose **Connect Device**.
-3. Enter the one-time pairing code printed by Laz Connector.
+3. Approve the local system pairing dialog; if the dialog is unavailable, enter the one-time code printed by Laz Connector.
 4. Use **Permissions** in the connection panel to choose a folder or file and the exact capabilities to grant.
 5. Revisit Laz Helper later; the saved pairing token reconnects automatically while the connector is running.
 
