@@ -23,7 +23,7 @@ The Blueprint connects the web service to PostgreSQL using Render's private conn
 ## Important demo limitations
 
 - The service's workspace is the server-side `workspace/` directory, not a visitor's computer. LazHelper cannot access a visitor's local files through a hosted web page. Files in the server workspace are on Render's ephemeral filesystem and may reset after redeploy or restart; PostgreSQL preserves application records, not file contents.
-- Ollama is optional. `127.0.0.1:11434` on Render refers to the Render web-service container, not Ollama running on your own computer. The hosted demo can scan and inspect its available workspace without Ollama, but local Gemma recommendations will be unavailable unless a reachable Ollama runtime is separately provided and configured.
+- Gemma recommendations use the existing Ollama-compatible API integration. The Blueprint intentionally asks you to provide `LAZHELPER_OLLAMA_URL` rather than setting it to `127.0.0.1`, because localhost inside Render is the web-service container and is not your computer. Set `LAZHELPER_OLLAMA_URL` to the base URL of a reachable Ollama-compatible service that has the configured model available, and set `LAZHELPER_OLLAMA_MODEL` to its exact model tag (default `gemma3:1b`). The endpoint must be reachable from Render over the network. If you do not configure it, the app can still deploy and use non-AI file inspection, but Gemma recommendations will be unavailable.
 - LazHelper does not currently provide user authentication. Treat the public deployment as a demonstration using sample/non-sensitive files only. Do not upload or store private documents or credentials in it.
 
 ## Troubleshooting
