@@ -40,12 +40,23 @@ jobs:
           python -m pip install -r connector/requirements.txt pyinstaller
       - name: Build standalone executable
         run: python -m PyInstaller --noconfirm --clean --onefile --name laz-connector --paths . laz_connector/__main__.py
-      - name: Package executable
+      - name: Smoke-test standalone executable
+        shell: bash
+        run: ./"${{ matrix.executable }}" --version
+      - name: Package executable and checksum
         shell: bash
         run: |
           mkdir -p package
           cp "${{ matrix.executable }}" "package/$(basename "${{ matrix.executable }}")"
           cp connector/README.md package/README.txt
+          python - <<'PY'
+          import hashlib
+          from pathlib import Path
+          package = Path("package")
+          executable = next(p for p in package.iterdir() if p.name != "README.txt")
+          digest = hashlib.sha256(executable.read_bytes()).hexdigest()
+          (package / "SHA256SUMS.txt").write_text(f"{digest}  {executable.name}\\n", encoding="utf-8")
+          PY
           cd package
           if [ "${{ runner.os }}" = "Windows" ]; then
             7z a "../${{ matrix.artifact }}.zip" *
