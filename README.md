@@ -51,7 +51,7 @@ The [documentation index](docs/README.md) provides guides to the product, archit
 - Python 3.11+
 - FastAPI and Pydantic
 - Ollama-compatible AI models
-- SQLite for local preferences and operation history
+- SQLite for local development and PostgreSQL for deployments configured with `DATABASE_URL`
 - Pytest for automated tests
 
 Laz Helper's AI integration is designed to work with Ollama-compatible models, including open-weight models such as Gemma. Choose a model that suits your device and intended workload.
@@ -102,7 +102,7 @@ Laz Helper uses Ollama for AI-assisted file descriptions, summaries, and organiz
 ollama pull gemma3:1b
 ```
 
-Set the model and Ollama endpoint in your `.env` configuration. File scanning, supported document extraction, organization previews, and workspace insights are available through the application workflow.
+Set the model and Ollama endpoint in your `.env` configuration. For local development, Laz Helper stores preferences and operation history in SQLite. When `DATABASE_URL` is configured, it uses PostgreSQL for shared application state. File scanning, supported document extraction, organization previews, and workspace insights are available through the application workflow.
 
 ## Run tests
 
