@@ -229,7 +229,8 @@ function go(v) {
   document.querySelectorAll(".view").forEach(s => s.classList.toggle("on", s.id === "v-" + v));
   document.querySelectorAll("#nav button").forEach(b => { const on = b.dataset.v === v; b.classList.toggle("on", on); on ? b.setAttribute("aria-current", "page") : b.removeAttribute("aria-current"); });
   window.scrollTo(0, 0);
-  ({ home, review, history, settings })[v]();
+  const renderers = { home, review, history, settings };
+  if (renderers[v]) renderers[v]();
 }
 document.querySelectorAll("#nav button").forEach(b => b.addEventListener("click", () => go(b.dataset.v)));
 $("#sheet").addEventListener("click", e => { if (e.target.id === "sheet") closeSheet(); });

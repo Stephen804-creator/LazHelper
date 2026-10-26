@@ -7,6 +7,9 @@
 <meta name="theme-color" content="#244a38">
 <title>Laz Helper</title>
 <link rel="stylesheet" href="/static/styles.css">
+<link rel="stylesheet" href="/static/device-connect.css">
+<link rel="stylesheet" href="/static/downloads-page.css">
+<link rel="stylesheet" href="/static/stage-n.css">
 </head>
 <body>
 <div class="shell">
@@ -15,22 +18,48 @@
     <div class="brand"><span class="logo" aria-hidden="true">L</span><div><b>Laz Helper</b><small>Understand your files</small></div></div>
     <nav id="nav" aria-label="Main">
       <button data-v="home" class="on"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8M5 10v10h14V10"/></svg><span>Home</span></button>
+      <button data-v="ask"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H8l-4 4zM8 9h8M8 12h5"/></svg><span>Ask</span></button>
       <button data-v="review"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/></svg><span>Review</span></button>
       <button data-v="history"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7M3 4v5h5M12 8v4l3 2"/></svg><span>History</span></button>
+      <button data-v="downloads"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m-5-5 5 5 5-5M4 17v4h16v-4"/></svg><span>Downloads</span></button>
       <button data-v="settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h2M10 12h10M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="8" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg><span>Settings</span></button>
     </nav>
     <p class="side-note">Your files stay on your computer. Nothing moves until you approve it.</p>
   </aside>
   <main id="main">
     <section id="v-home" class="view on"></section>
+    <section id="v-ask" class="view" aria-label="Ask Laz Helper"></section>
     <section id="v-review" class="view"></section>
     <section id="v-history" class="view"></section>
     <section id="v-settings" class="view"></section>
+    <section id="v-downloads" class="view" aria-labelledby="downloads-title">
+      <section class="card">
+        <div class="between">
+          <div><p class="mute small">YOUR DEVICE</p><h1 id="downloads-title" style="font-size:28px">Downloads</h1></div>
+          <span class="read-only-pill" id="downloads-connection-state">Not connected</span>
+        </div>
+        <p class="mute">Choose a folder on your computer and grant Laz Connector read-only access. File contents are not uploaded to the hosted app.</p>
+        <div class="downloads-controls">
+          <label for="downloads-folder">Connected folder</label>
+          <select id="downloads-folder" aria-label="Granted Downloads folder"><option value="">Connect a Downloads folder first</option></select>
+          <button id="downloads-connect-folder" type="button">Choose Downloads folder</button>
+          <button id="downloads-refresh" type="button">Refresh</button>
+        </div>
+        <p id="downloads-status" class="status-line" role="status">Connect Laz Connector to begin.</p>
+        <div class="downloads-list-wrap">
+          <table><thead><tr><th>Name</th><th>Type</th><th>Size</th><th>Last changed</th></tr></thead><tbody id="downloads-rows"></tbody></table>
+        </div>
+        <p id="downloads-empty" class="empty-state" hidden>No files found in this folder yet.</p>
+      </section>
+    </section>
     <noscript><p class="card">Laz Helper needs JavaScript to run in your browser.</p></noscript>
   </main>
 </div>
 <div id="sheet" class="sheet" role="dialog" aria-modal="true" aria-label="File details"><div id="panel" class="panel"></div></div>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 <script src="/static/app.js"></script>
+<script src="/static/device-connect.js"></script>
+<script src="/static/downloads-page.js"></script>
+<script src="/static/stage-n.js"></script>
 </body>
 </html>
