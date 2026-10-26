@@ -160,7 +160,7 @@ function review() {
       S.queue.map(q => el("section", { class: "card" }, el("b", { class: "nm", style: "display:block" }, base(q.path)), el("p", { class: "mute small", style: "margin-bottom:10px" }, "No folder rule fits this file type."),
         el("div", { class: "row" }, el("button", { onclick: () => decide(q, "reviewed") }, "Mark done"), el("button", { onclick: () => decide(q, "dismissed") }, "Dismiss")))));
   }
-  v.replaceChildren(...out);
+  v.replaceChildren(...out.flat());
   updBar();
 }
 async function findDups(ev) {
