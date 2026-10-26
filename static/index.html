@@ -9,6 +9,7 @@
 <link rel="stylesheet" href="/static/styles.css">
 <link rel="stylesheet" href="/static/device-connect.css">
 <link rel="stylesheet" href="/static/downloads-page.css">
+<link rel="stylesheet" href="/static/stage-n.css">
 </head>
 <body>
 <div class="shell">
@@ -17,6 +18,7 @@
     <div class="brand"><span class="logo" aria-hidden="true">L</span><div><b>Laz Helper</b><small>Understand your files</small></div></div>
     <nav id="nav" aria-label="Main">
       <button data-v="home" class="on"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8M5 10v10h14V10"/></svg><span>Home</span></button>
+      <button data-v="ask"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H8l-4 4zM8 9h8M8 12h5"/></svg><span>Ask</span></button>
       <button data-v="review"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/></svg><span>Review</span></button>
       <button data-v="history"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7M3 4v5h5M12 8v4l3 2"/></svg><span>History</span></button>
       <button data-v="downloads"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m-5-5 5 5 5-5M4 17v4h16v-4"/></svg><span>Downloads</span></button>
@@ -26,6 +28,7 @@
   </aside>
   <main id="main">
     <section id="v-home" class="view on"></section>
+    <section id="v-ask" class="view" aria-label="Ask Laz Helper"></section>
     <section id="v-review" class="view"></section>
     <section id="v-history" class="view"></section>
     <section id="v-settings" class="view"></section>
@@ -57,5 +60,6 @@
 <script src="/static/app.js"></script>
 <script src="/static/device-connect.js"></script>
 <script src="/static/downloads-page.js"></script>
+<script src="/static/stage-n.js"></script>
 </body>
 </html>
