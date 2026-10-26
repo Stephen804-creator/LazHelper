@@ -129,3 +129,52 @@ def test_symlink_paths_are_rejected(tmp_path):
         pytest.skip("Symlink creation unavailable")
     with pytest.raises(UnsafePath):
         validate_existing_path(str(link), "folder")
+
+
+def test_ask_every_time_scope_requires_approval_for_reads(client, tmp_path):
+    token = pair(client)
+    folder = tmp_path / "workspace"
+    folder.mkdir()
+    target = folder / "readme.txt"
+    target.write_text("local note", encoding="utf-8")
+    agent.store.update(lambda state: state.update({
+        "scope_mode": "ask_every_time",
+        "approval_mode": "ask_every_time",
+        "grants": [{
+            "id": "read-grant", "label": "workspace", "kind": "folder", "path": str(folder),
+            "capabilities": ["read"],
+        }],
+    }))
+    blocked_list = client.get("/v1/files", params={"path": str(folder)}, headers=auth(token))
+    assert blocked_list.status_code == 409
+    approved_list = client.get("/v1/files", params={"path": str(folder), "approved": "true"}, headers=auth(token))
+    assert approved_list.status_code == 200
+    blocked_read = client.get("/v1/files/content", params={"path": str(target)}, headers=auth(token))
+    assert blocked_read.status_code == 409
+    approved_read = client.get("/v1/files/content", params={"path": str(target), "approved": "true"}, headers=auth(token))
+    assert approved_read.status_code == 200
+    assert approved_read.json()["content"] == "local note"
+
+
+def test_duplicate_scan_is_read_only(client, tmp_path):
+    token = pair(client)
+    folder = tmp_path / "workspace"
+    folder.mkdir()
+    first = folder / "first.txt"
+    second = folder / "second.txt"
+    first.write_text("same bytes", encoding="utf-8")
+    second.write_text("same bytes", encoding="utf-8")
+    agent.store.update(lambda state: state.update({
+        "scope_mode": "permitted_locations",
+        "approval_mode": "ask_every_time",
+        "grants": [{
+            "id": "read-grant", "label": "workspace", "kind": "folder", "path": str(folder),
+            "capabilities": ["read"],
+        }],
+    }))
+    response = client.get("/v1/duplicates", params={"path": str(folder), "approved": "true"}, headers=auth(token))
+    assert response.status_code == 200
+    data = response.json()
+    assert data["read_only"] is True
+    assert data["groups"][0]["count"] == 2
+    assert first.exists() and second.exists()
