@@ -6,7 +6,7 @@
   const card=el("section",undefined,"workspace-card ask-card");card.id="ask-lazhelper";
   card.append(el("p","STAGE N · ASK LAZHELPER","eyebrow"));
   card.append(el("h2","What would you like help with?"));
-  card.append(el("p","Ask a question about your local files, or turn a task into a reviewable preview. LazHelper will not make file changes from this chat."));
+  card.append(el("p","Use the hosted workspace modes or choose device-local modes to work with files you have granted. Device-local Ask needs Laz Connector and Ollama on this computer. File changes are always reviewed before execution."));
   const form=el("form",undefined,"ask-form");
   const modeLabel=el("label","Request type");modeLabel.htmlFor="ask-mode";
   const mode=el("select");mode.id="ask-mode";
@@ -50,6 +50,7 @@
     if(isDevice&&path.value.trim()===".")path.value="";
     if(!isDevice&&!path.value.trim())path.value=".";
     prompt.placeholder=(mode.value==="task"||mode.value==="device_task")?"e.g. Find duplicate notes or move PDFs into a folder":"e.g. What do my notes say about virtual networks?";
+    if(isDevice)show("Device mode uses Laz Connector and a local Ollama model. It does not send device file contents to Render.");
   });
   const renderSources=rows=>{
     sources.replaceChildren();
