@@ -52,6 +52,14 @@ Laz Helper is designed around workspace boundaries and review before action.
 
 **Authentication is not yet implemented.** Run Laz Helper locally and do not expose it directly to the public internet or use it to process sensitive workspace data on an unauthenticated deployment.
 
+## Documentation
+
+- [Product overview](docs/product-overview.md)
+- [Architecture](docs/architecture.md)
+- [File organization](docs/file-organization.md)
+- [Scheduled reviews and workspace insights](docs/scheduled-reviews-and-insights.md)
+- [Security and privacy](docs/security-and-privacy.md)
+
 ## Technology
 
 - Python 3.11+
@@ -78,7 +86,7 @@ Activate the virtual environment.
 
 **Windows PowerShell**
 ```powershell
-.venv\\Scripts\\Activate.ps1
+.venv\Scripts\Activate.ps1
 ```
 
 **macOS / Linux**
