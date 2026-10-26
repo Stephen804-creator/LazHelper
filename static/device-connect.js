@@ -100,7 +100,7 @@
     const caps=[...dialog.querySelectorAll("[data-capability]:checked")].map(x=>x.dataset.capability);
     if(!caps.length){setStatus("Choose at least one capability before granting access.","error");return;}
     setStatus("Choose the "+kind+" in the operating-system dialog…");
-    try{const result=await request("/permissions/pick",{method:"POST",body:JSON.stringify({kind,capabilities:caps})});if(result.cancelled){setStatus("No permission was added.","info");return;}setStatus("Permission granted for "+result.grant.label+".","ok");await loadPermissions();}
+    try{const result=await request("/permissions/pick",{method:"POST",body:JSON.stringify({kind,capabilities:caps})});if(result.cancelled){setStatus("No permission was added.","info");return null;}setStatus("Permission granted for "+result.grant.label+".","ok");await loadPermissions();return result.grant;}
     catch(e){setStatus(e.message,"error");return null;}
   }
   async function loadPermissions() {
