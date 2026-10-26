@@ -64,7 +64,6 @@
       dialog.append(button("Check connector","",async()=>{setStatus("Checking for Laz Connector…");const r=await checkAgent();if(r.installed)setStatus("Connector found"+(agentVersion?" · version "+agentVersion:"")+". Enter the one-time code to pair.","ok");else setStatus("Connector not detected. Install and start Laz Connector, then try again. "+r.error,"error");}));
       dialog.append(button("Pair this device","primary",async()=>{
         const value=code.value.trim().toUpperCase();
-        if(!value){setStatus("Enter the one-time pairing code printed by Laz Connector.","error");return;}
         const b=dialog.querySelector(".laz-connect-btn.primary"); b.disabled=true;
         try{const r=await request("/pair",{method:"POST",body:JSON.stringify(value?{code:value}:{})},60000);state.token=r.token;localStorage.setItem(TOKEN_KEY,r.token);connected=true;state.connection=await request("/connection");updateLauncher();localStorage.setItem(DISMISS_KEY,"1");render();setStatus("Device connected. Your pairing will be reused on future visits.","ok");await loadPermissions();}
         catch(e){setStatus(e.message,"error");}
