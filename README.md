@@ -227,7 +227,7 @@ Issues, bug reports, test improvements, and focused pull requests are welcome. F
 
 ## Device connector (early implementation)
 
-The optional Laz Connector is a local process intended to let Laz Helper work with files explicitly permitted on the user's device. It runs on the computer; the hosted Render service cannot read a visitor's private folders. The connector starts with no file grants, binds to loopback, uses one-time pairing, and supports separate read, create, edit, move, rename, and delete-to-quarantine capabilities.
+The optional Laz Connector is a local process intended to let Laz Helper work with files explicitly permitted on the user's device. It runs on the computer; the hosted Render service cannot read a visitor's private folders. The connector starts with no file grants, binds to loopback, uses native local confirmation or a one-time code fallback for pairing, and supports separate read, create, edit, move, rename, and delete-to-quarantine capabilities.
 
 The Connect Device panel is additive: the existing Ask/voice interface, workspace, tools, permissions, and navigation remain in place. Browser and operating-system restrictions still apply; a website cannot silently install the connector or bypass OS permissions. Connector-backed operations are not yet a completed end-to-end replacement for the hosted workspace API; the local service is the foundation for the next integration step.
 
