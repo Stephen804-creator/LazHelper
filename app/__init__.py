@@ -1,0 +1,1 @@
+"""LazyDesk application package."""
