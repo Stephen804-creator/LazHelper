@@ -207,7 +207,7 @@ async def private_network_access_headers(request: Request, call_next):
 
 
 class PairRequest(BaseModel):
-    code: str = Field(min_length=7, max_length=7)
+    code: str | None = Field(default=None, min_length=7, max_length=7)
 
 
 class PreferenceRequest(BaseModel):
@@ -244,9 +244,30 @@ async def pair(req: PairRequest, request: Request):
         raise HTTPException(429, "Too many pairing attempts. Restart the connector and try again.")
     _pair_attempts[origin] = (attempts + 1, reset)
     current = store.snapshot().get("pairing_code", "")
-    if not hmac.compare_digest(req.code.strip().upper(), current.upper()):
-        _record("pair", "denied", f"Pairing rejected for {origin}")
-        raise HTTPException(401, "That pairing code is incorrect or has already been used.")
+    if req.code:
+        if not hmac.compare_digest(req.code.strip().upper(), current.upper()):
+            _record("pair", "denied", f"Pairing rejected for {origin}")
+            raise HTTPException(401, "That pairing code is incorrect or has already been used.")
+    else:
+        try:
+            import tkinter as tk
+            from tkinter import messagebox
+            root = tk.Tk()
+            root.withdraw()
+            root.attributes("-topmost", True)
+            try:
+                accepted = messagebox.askyesno(
+                    "Laz Helper device connection",
+                    f"Allow the Laz Helper website at ${origin} to connect to this local connector? Only grant access to folders/files you choose afterward.",
+                    parent=root,
+                )
+            finally:
+                root.destroy()
+        except Exception as exc:
+            raise HTTPException(501, "Native confirmation is unavailable. Enter the one-time pairing code shown in the connector terminal.") from exc
+        if not accepted:
+            _record("pair", "denied", f"Local pairing approval declined for {origin}")
+            raise HTTPException(403, "Device pairing was cancelled on this computer.")
     token = secrets.token_urlsafe(32)
     def save(state):
         state.setdefault("paired_origins", {})[origin] = token
