@@ -1,32 +1,31 @@
 # Security and Privacy
 
-Laz Helper is designed for local use and keeps file-changing actions under explicit user control. Review the following boundaries before processing sensitive files or configuring a deployment.
+Laz Helper is designed to make file understanding and organization transparent, with clear workspace boundaries and user-reviewed changes.
 
-## Workspace access
+## Workspace boundaries
 
-- Configure the allowed root to a specific folder intended for review; avoid selecting an entire drive or home directory without a clear need.
-- File operations are intended to remain within the configured workspace.
+- Configure the workspace folder that Laz Helper should inspect.
+- Scanning follows the configured workspace boundary and does not follow symbolic links.
 - Scan depth, file counts, file size, extracted text, and format-specific processing are bounded.
-- Scanning and extraction do not change file contents or locations.
-- Source files are treated as text, not executed. ZIP archives are inventoried rather than extracted.
+- Scanning and extraction leave file contents and locations unchanged.
+- Source files are treated as text, and ZIP archives are inventoried without extracting their contents.
 
-## AI and document privacy
+## AI and document handling
 
-- AI recommendations are optional and use the configured Ollama endpoint.
-- When AI analysis is requested, extracted document content used for the recommendation is sent to that configured service. Confirm where the service runs and who can access it before analyzing sensitive material.
-- Workspace insights use file metadata and do not send document contents to an AI provider.
-- Treat extracted document content and AI output as untrusted. Review suggestions before using them.
+- AI-assisted recommendations use the configured Ollama endpoint.
+- The application sends extracted document content to that endpoint when an AI recommendation is requested.
+- Workspace insights summarize file metadata such as counts, extensions, folder distribution, and file sizes.
+- AI recommendations are presented for review before users decide how to organize files.
 
-## File changes and recovery
+## File-change control
 
-- Organization plans are previews; file moves require explicit approval.
+- Organization plans preview proposed destinations before changes are applied.
+- Users explicitly approve file moves.
 - Existing destination files are not silently overwritten.
-- Duplicate detection reports exact matches and does not delete files.
-- Sloth Mode creates review summaries and does not move or delete files in the background.
-- Undo can restore a recorded move only when the original location is available. It is not a substitute for backups.
+- Duplicate discovery reports exact matches without deleting files.
+- Sloth Mode prepares scheduled review summaries rather than moving or deleting files automatically.
+- The operation journal records supported moves and provides an undo path when the original location is available.
 
-## Deployment
+## Local data
 
-Authentication and authorization are not implemented in the current application. Keep Laz Helper on loopback for local use and do not expose it directly to the public internet or operate it as a public multi-user service.
-
-The operation journal, preferences, scheduled-review settings, and workspace contents rely on local storage. Hosting platforms with ephemeral filesystems may lose these records or files during restarts and redeployments.
+Laz Helper stores preferences, operation history, and workspace data using the configured local filesystem and SQLite state. The selected workspace and AI endpoint determine how files are processed and where AI requests are sent.
