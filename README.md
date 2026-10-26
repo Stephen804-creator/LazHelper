@@ -44,6 +44,14 @@ The Connect Device panel is additive and does not replace the existing interface
 
 See the connector development guide, local connector architecture, and Units 1–4 implementation record in the documentation. Standalone platform builds are prepared when a connector release tag is published.
 
+## Device connector (early implementation)
+
+The optional Laz Connector is a local process intended to let Laz Helper work with files explicitly permitted on the user's device. It runs on the computer; the hosted Render service cannot read a visitor's private folders. The connector starts with no file grants, binds to loopback, uses one-time pairing, and supports separate read, create, edit, move, rename, and delete-to-quarantine capabilities.
+
+The Connect Device panel is additive and does not replace the existing interface. Browser and operating-system restrictions still apply: a website cannot silently install the connector or bypass OS permissions. Connector-backed operations are not yet a completed end-to-end replacement for the hosted workspace API; the local service is the foundation for the next integration step.
+
+See the connector development guide, local connector architecture, and Units 1–4 implementation record in the documentation. Standalone platform builds are prepared when a connector release tag is published.
+
 ## Documentation
 
 The [documentation index](docs/README.md) provides guides to the product, architecture, file organization, scheduled reviews, and privacy.
