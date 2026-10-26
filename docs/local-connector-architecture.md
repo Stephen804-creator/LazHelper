@@ -61,7 +61,7 @@ The default is `selected_folders` plus `ask_every_time`, with no grants. No perm
 
 ## Pairing and reconnection
 
-On first launch the connector prints a one-time pairing code. The user initiates Connect Device and enters that code. The connector consumes it and returns a random bearer token stored locally by the browser. Subsequent visits reuse the token and check `/v1/connection`; they do not pair again unless local browser storage is cleared, the connector state is reset, or the user revokes pairing.
+On first launch the connector prints a one-time pairing code. When the user chooses Connect Device, the connector first requests a native local confirmation dialog; if the host cannot show it, the user can enter the printed code instead. The connector consumes the code when used and returns a random bearer token stored by the browser. Subsequent visits reuse the token and check `/v1/connection`; they do not pair again unless local browser storage is cleared, the connector state is reset, or the user revokes pairing.
 
 ## Browser compatibility
 
