@@ -258,7 +258,7 @@ async def pair(req: PairRequest, request: Request):
             try:
                 accepted = messagebox.askyesno(
                     "Laz Helper device connection",
-                    f"Allow the Laz Helper website at ${origin} to connect to this local connector? Only grant access to folders/files you choose afterward.",
+                    f"Allow the Laz Helper website at {origin} to connect to this local connector? Only grant access to folders/files you choose afterward.",
                     parent=root,
                 )
             finally:
@@ -370,6 +370,7 @@ async def list_files(path: str = Query(min_length=1, max_length=4096), approved:
             rows.append({"name": item.name, "path": str(item), "kind": "folder" if item.is_dir() else "file", "size_bytes": stat.st_size if item.is_file() else None, "modified_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(stat.st_mtime))})
     except OSError as exc:
         raise HTTPException(400, "Could not read this folder.") from exc
+    _record("list", "completed", f"Listed local folder {folder}")
     return {"path": str(folder), "items": rows}
 
 
@@ -409,9 +410,14 @@ async def find_duplicates(path: str = Query(min_length=1, max_length=4096), appr
     total_bytes = 0
     truncated = False
     try:
+        root_depth = len(folder.parts)
         for current, directories, names in os.walk(folder, followlinks=False):
             current_path = Path(current)
-            directories[:] = [name for name in directories if not (current_path / name).is_symlink() and not is_protected(current_path / name)]
+            depth = len(current_path.parts) - root_depth
+            if depth >= 8:
+                directories[:] = []
+            else:
+                directories[:] = [name for name in directories if name != ".laz-helper-quarantine" and not (current_path / name).is_symlink() and not is_protected(current_path / name)]
             for name in names:
                 item = current_path / name
                 if item.is_symlink():
