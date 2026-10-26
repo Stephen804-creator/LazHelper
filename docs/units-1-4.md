@@ -60,3 +60,10 @@ The web module:
 - Native file picking depends on a desktop GUI. Headless environments may require the CLI/configuration route.
 - Standalone executable release packages are built by the repository workflow when a connector release tag is published; until a release exists, the release page may not contain a downloadable binary.
 - These units do not yet replace the existing workspace APIs with connector-backed file operations. The connector API is the safe local foundation; the next integration step must route file requests through the paired connector rather than sending private file contents to Render.
+
+
+## Downloads page — device-local browser downloads
+
+The Downloads page is an optional view of a folder the user grants to Laz Connector. The user selects the operating system's Downloads folder through the connector's native folder picker and grants read-only access for the listing. The page displays local file names, type, size, and modified time; it does not upload file contents to the hosted service. When the scope is not `ask_every_time`, it refreshes the folder listing while the page remains open. In `ask_every_time` mode, each manual refresh asks the user for approval and background polling is disabled.
+
+This is not a browser-download interception API or browser extension: a website cannot automatically receive every browser download event. New files appear when the permitted Downloads folder is refreshed. The page does not gain access to other folders, and a folder grant can be revoked in Connect Device.
