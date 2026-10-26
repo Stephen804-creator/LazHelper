@@ -6,3 +6,6 @@ __pycache__/
 workspace/*
 !workspace/.gitkeep
 .DS_Store
+build/
+dist/
+*.spec
