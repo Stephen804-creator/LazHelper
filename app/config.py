@@ -23,6 +23,6 @@ MAX_TEXT_CHARS = max(1000, min(int(os.getenv("LAZHELPER_MAX_TEXT_CHARS", os.gete
 # Ollama Cloud accepts either https://ollama.com or https://ollama.com/api.
 # Keep local Ollama usable for development when no cloud URL is configured.
 OLLAMA_URL = os.getenv("LAZHELPER_OLLAMA_URL", os.getenv("LAZYDESK_OLLAMA_URL", "http://127.0.0.1:11434")).rstrip("/")
-OLLAMA_MODEL = os.getenv("LAZHELPER_OLLAMA_MODEL", os.getenv("LAZYDESK_OLLAMA_MODEL", "gemma4:31b"))
+OLLAMA_MODEL = os.getenv("LAZHELPER_OLLAMA_MODEL", os.getenv("LAZYDESK_OLLAMA_MODEL", "gemma3:1b"))
 OLLAMA_API_KEY = os.getenv("OLLAMA_API_KEY", os.getenv("LAZHELPER_OLLAMA_API_KEY", "")).strip()
 AI_TIMEOUT_SECONDS = max(5, min(int(os.getenv("LAZHELPER_AI_TIMEOUT_SECONDS", os.getenv("LAZYDESK_AI_TIMEOUT_SECONDS", "45"))), 180))
