@@ -18,7 +18,7 @@ from pydantic import BaseModel, Field
 from . import __version__
 from .security import (
     APPROVAL_MODES, CAPABILITIES, SCOPE_MODES, PermissionDenied, UnsafePath,
-    grant_matches, is_protected, require_grant, validate_existing_path, validate_target_path,
+    ensure_no_symlink_components, grant_matches, is_protected, require_grant, validate_existing_path, validate_target_path,
 )
 from .store import StateStore, new_pairing_code
 
@@ -168,6 +168,11 @@ def _apply_operation(req: "OperationRequest", state: dict) -> dict:
         if not path.is_file():
             raise HTTPException(400, "Only individual files can be sent to quarantine; directory deletion is disabled.")
         quarantine = path.parent / ".laz-helper-quarantine"
+        if quarantine.is_symlink():
+            raise HTTPException(403, "A symbolic link cannot be used as the quarantine folder.")
+        if quarantine.exists() and not quarantine.is_dir():
+            raise HTTPException(403, "The quarantine path is not a folder.")
+        ensure_no_symlink_components(quarantine)
         if is_protected(quarantine):
             raise HTTPException(403, "This location cannot be used for quarantine.")
         quarantine.mkdir(mode=0o700, exist_ok=True)
