@@ -1,6 +1,7 @@
 """Loopback-only Laz Helper local connector API."""
 from __future__ import annotations
 
+import hashlib
 import hmac
 import os
 import secrets
@@ -325,10 +326,13 @@ async def activity(limit: int = Query(default=50, ge=1, le=200), origin: str = D
 
 
 @router.get("/files")
-async def list_files(path: str = Query(min_length=1, max_length=4096), origin: str = Depends(_auth)):
+async def list_files(path: str = Query(min_length=1, max_length=4096), approved: bool = False, origin: str = Depends(_auth)):
+    state = _state()
+    if state.get("scope_mode") == "ask_every_time" and not approved:
+        raise HTTPException(409, "Reading this folder needs explicit approval.")
     try:
         folder = validate_existing_path(path, "folder")
-        _grant_for(folder, "read", _state())
+        _grant_for(folder, "read", state)
     except (UnsafePath, PermissionDenied) as exc:
         _raise_path_error(exc)
     rows = []
@@ -349,10 +353,13 @@ async def list_files(path: str = Query(min_length=1, max_length=4096), origin: s
 
 
 @router.get("/files/content")
-async def read_file_content(path: str = Query(min_length=1, max_length=4096), origin: str = Depends(_auth)):
+async def read_file_content(path: str = Query(min_length=1, max_length=4096), approved: bool = False, origin: str = Depends(_auth)):
+    state = _state()
+    if state.get("scope_mode") == "ask_every_time" and not approved:
+        raise HTTPException(409, "Reading this file needs explicit approval.")
     try:
         file_path = validate_existing_path(path, "file")
-        _grant_for(file_path, "read", _state())
+        _grant_for(file_path, "read", state)
     except (UnsafePath, PermissionDenied) as exc:
         _raise_path_error(exc)
     if file_path.stat().st_size > 200_000:
@@ -363,6 +370,68 @@ async def read_file_content(path: str = Query(min_length=1, max_length=4096), or
         raise HTTPException(415, "This file is not readable as UTF-8 text.") from exc
     _record("read", "completed", f"Read text from {file_path.name}")
     return {"path": str(file_path), "content": content}
+
+
+@router.get("/duplicates")
+async def find_duplicates(path: str = Query(min_length=1, max_length=4096), approved: bool = False, origin: str = Depends(_auth)):
+    state = _state()
+    if state.get("scope_mode") == "ask_every_time" and not approved:
+        raise HTTPException(409, "Duplicate scanning reads local files and needs explicit approval.")
+    try:
+        folder = validate_existing_path(path, "folder")
+        _grant_for(folder, "read", state)
+    except (UnsafePath, PermissionDenied) as exc:
+        _raise_path_error(exc)
+
+    candidates: dict[int, list[Path]] = {}
+    seen = 0
+    total_bytes = 0
+    truncated = False
+    try:
+        for current, directories, names in os.walk(folder, followlinks=False):
+            current_path = Path(current)
+            directories[:] = [name for name in directories if not (current_path / name).is_symlink() and not is_protected(current_path / name)]
+            for name in names:
+                item = current_path / name
+                if item.is_symlink():
+                    continue
+                try:
+                    _grant_for(item, "read", state)
+                    info = item.stat(follow_symlinks=False)
+                except (OSError, PermissionDenied, UnsafePath):
+                    continue
+                if not item.is_file() or info.st_size > 50 * 1024 * 1024:
+                    continue
+                if seen >= 500 or total_bytes + info.st_size > 250 * 1024 * 1024:
+                    truncated = True
+                    break
+                seen += 1
+                total_bytes += info.st_size
+                candidates.setdefault(info.st_size, []).append(item)
+            if truncated:
+                break
+    except OSError as exc:
+        raise HTTPException(400, "Could not scan the selected folder for duplicates.") from exc
+
+    groups = []
+    for size, paths in candidates.items():
+        if len(paths) < 2:
+            continue
+        hashes: dict[str, list[str]] = {}
+        for item in paths:
+            digest = hashlib.sha256()
+            try:
+                with item.open("rb") as stream:
+                    for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+                        digest.update(chunk)
+            except OSError:
+                continue
+            hashes.setdefault(digest.hexdigest(), []).append(str(item))
+        for digest, matching in hashes.items():
+            if len(matching) > 1:
+                groups.append({"sha256": digest, "size_bytes": size, "count": len(matching), "files": matching})
+    _record("duplicates", "completed", f"Read-only duplicate scan in {folder}; groups={len(groups)}")
+    return {"folder": str(folder), "groups": groups, "files_checked": seen, "truncated": truncated, "read_only": True, "message": "Duplicate matches are review signals only; no files were changed."}
 
 
 @router.post("/operations/preview")
