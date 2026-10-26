@@ -178,3 +178,87 @@ def test_duplicate_scan_is_read_only(client, tmp_path):
     assert data["read_only"] is True
     assert data["groups"][0]["count"] == 2
     assert first.exists() and second.exists()
+
+
+
+def test_local_assistant_uses_only_granted_text_files(client, tmp_path, monkeypatch):
+    token = pair(client)
+    folder = tmp_path / "Downloads"
+    folder.mkdir()
+    note = folder / "course-notes.txt"
+    note.write_text("The private study phrase is violet river.", encoding="utf-8")
+    agent.store.update(lambda state: state.update({
+        "scope_mode": "permitted_locations",
+        "grants": [{
+            "id": "downloads-read", "label": "Downloads", "kind": "folder",
+            "path": str(folder), "capabilities": ["read"],
+        }],
+    }))
+    captured = {}
+    def fake_generate(prompt, json_mode=False):
+        captured["prompt"] = prompt
+        return "The note mentions violet river.", "test-local-model"
+    monkeypatch.setattr(agent, "_local_model_generate", fake_generate)
+    response = client.post(
+        "/v1/assistant/ask",
+        json={"path": str(folder), "question": "What phrase is in my note?", "approved": True},
+        headers=auth(token),
+    )
+    assert response.status_code == 200
+    assert response.json()["local_connector"] is True
+    assert "violet river" in captured["prompt"]
+    assert "violet river" in response.json()["answer"]
+
+
+def test_local_assistant_requires_read_approval_in_ask_every_time(client, tmp_path, monkeypatch):
+    token = pair(client)
+    folder = tmp_path / "Downloads"
+    folder.mkdir()
+    (folder / "note.txt").write_text("private", encoding="utf-8")
+    agent.store.update(lambda state: state.update({
+        "scope_mode": "ask_every_time",
+        "grants": [{
+            "id": "downloads-read", "label": "Downloads", "kind": "folder",
+            "path": str(folder), "capabilities": ["read"],
+        }],
+    }))
+    monkeypatch.setattr(agent, "_local_model_generate", lambda prompt, json_mode=False: ("unused", "test"))
+    response = client.post(
+        "/v1/assistant/ask",
+        json={"path": str(folder), "question": "Summarize my note."},
+        headers=auth(token),
+    )
+    assert response.status_code == 409
+
+
+def test_local_task_plan_is_not_executed_and_rejects_unknown_sources(client, tmp_path, monkeypatch):
+    token = pair(client)
+    folder = tmp_path / "Downloads"
+    folder.mkdir()
+    source = folder / "report.txt"
+    source.write_text("report", encoding="utf-8")
+    agent.store.update(lambda state: state.update({
+        "scope_mode": "permitted_locations",
+        "grants": [{
+            "id": "downloads-all", "label": "Downloads", "kind": "folder",
+            "path": str(folder), "capabilities": ["read", "create", "edit", "move", "rename", "delete"],
+        }],
+    }))
+    fake = {
+        "message": "Review the proposed move.",
+        "operations": [
+            {"action": "move", "path": str(source), "destination": str(folder / "report-renamed.txt"), "reason": "Test move"},
+            {"action": "delete", "path": str(folder / "not-in-inventory.txt"), "reason": "Invalid source"},
+        ],
+    }
+    monkeypatch.setattr(agent, "_local_model_generate", lambda prompt, json_mode=False: (__import__("json").dumps(fake), "test-local-model"))
+    response = client.post(
+        "/v1/assistant/plan",
+        json={"path": str(folder), "command": "Rename report.txt"},
+        headers=auth(token),
+    )
+    assert response.status_code == 200
+    assert response.json()["executed"] is False
+    assert len(response.json()["operations"]) == 1
+    assert source.exists()
+    assert not (folder / "report-renamed.txt").exists()
