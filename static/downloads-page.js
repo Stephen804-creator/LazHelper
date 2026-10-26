@@ -59,6 +59,7 @@
         });
         folders.forEach(g=>folderSelect.append(new Option(g.label+" — "+g.path,g.path)));
         const chosen=folders.find(g=>g.path===saved)||folders.find(g=>/downloads/i.test(g.label+" "+g.path))||folders[0];
+        if(folderSelect.value && folderSelect.value!==chosen.path)previousPaths=null;
         folderSelect.value=chosen.path;sessionStorage.setItem(KEY,chosen.path);
         refreshButton.disabled=false;
         setStatus(scopeMode==="ask_every_time"?"Folder connected. Each refresh will ask for approval.":"Folder connected. This page checks for new files while it remains open.","ok");
@@ -103,13 +104,13 @@
     connectButton.disabled=true;
     try{
       const grant=await api.chooseFolderForDownloads();
-      if(grant){sessionStorage.setItem(KEY,grant.path);await loadPermissions(grant.path);await loadFiles({automatic:false});}
+      if(grant){previousPaths=null;sessionStorage.setItem(KEY,grant.path);await loadPermissions(grant.path);await loadFiles({automatic:false});}
       else await loadPermissions();
     }catch(e){setStatus(e.message||"Folder selection did not complete.","error");}
     finally{connectButton.disabled=false;}
   });
   refreshButton.addEventListener("click",()=>loadFiles({automatic:false}));
-  folderSelect.addEventListener("change",()=>{sessionStorage.setItem(KEY,folderSelect.value);loadFiles({automatic:false});});
+  folderSelect.addEventListener("change",()=>{previousPaths=null;sessionStorage.setItem(KEY,folderSelect.value);loadFiles({automatic:false});});
   document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden")stopPolling();else if(connectorAvailable){startPolling();}});
   window.addEventListener("focus",()=>{if(connectorAvailable)loadPermissions(folderSelect.value);});
   async function init(){
