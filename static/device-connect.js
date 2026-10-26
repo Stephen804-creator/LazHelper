@@ -102,7 +102,7 @@
     if(!caps.length){setStatus("Choose at least one capability before granting access.","error");return;}
     setStatus("Choose the "+kind+" in the operating-system dialog…");
     try{const result=await request("/permissions/pick",{method:"POST",body:JSON.stringify({kind,capabilities:caps})});if(result.cancelled){setStatus("No permission was added.","info");return;}setStatus("Permission granted for "+result.grant.label+".","ok");await loadPermissions();}
-    catch(e){setStatus(e.message,"error");}
+    catch(e){setStatus(e.message,"error");return null;}
   }
   async function loadPermissions() {
     if(!connected)return;
@@ -119,6 +119,19 @@
       if(box){box.replaceChildren();if(!activity.items.length)box.append($("p","laz-connect-muted","No connector activity yet."));activity.items.forEach(i=>{const row=$("div","laz-connect-grant");row.append($("div","",i.action+" · "+i.status),$("small","laz-connect-muted",new Date(i.at).toLocaleString()+" — "+i.detail));box.append(row);});}
     } catch(e){setStatus(e.message,"error");}
   }
+  window.LazHelperConnector = {
+    get connected(){ return connected; },
+    request,
+    open,
+    async chooseFolderForDownloads(){
+      if(!connected){open();setStatus("Connect Laz Connector first, then choose your Downloads folder.","info");return null;}
+      open();
+      await new Promise(resolve=>setTimeout(resolve,0));
+      dialog.querySelectorAll("[data-capability]").forEach(cb=>{cb.checked=cb.dataset.capability==="read";});
+      const grant=await pick("folder");
+      return grant && grant.kind==="folder" && grant.capabilities.includes("read") ? grant : null;
+    }
+  };
   launcher.addEventListener("click",open);
   backdrop.addEventListener("click",e=>{if(e.target===backdrop)closeModal();});
   document.addEventListener("keydown",e=>{if(e.key==="Escape"&&backdrop.classList.contains("is-open"))closeModal();});
