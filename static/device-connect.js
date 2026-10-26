@@ -87,8 +87,14 @@
     section.append(button("Choose folder…","primary",()=>pick("folder")),button("Choose file…","",()=>pick("file")));
     const grants=$("div","");grants.id="laz-connect-grants";grants.append($("p","laz-connect-muted","Loading permission grants…"));section.append(grants);
     section.append(button("Save permission preferences","",async()=>{try{await request("/permissions/preferences",{method:"PUT",body:JSON.stringify({scope_mode:scope.value,approval_mode:approval.value})});setStatus("Permission preferences saved.","ok");await loadPermissions();}catch(e){setStatus(e.message,"error");}}));
+    const duplicateSection=$("div","laz-connect-section");duplicateSection.append($("h3","","Duplicate review"));
+    duplicateSection.append($("p","laz-connect-muted","Find exact copies inside a folder you have granted read access to. This scan is read-only and never deletes files."));
+    const duplicateFolder=$("select","");duplicateFolder.id="laz-duplicate-folder";
+    duplicateSection.append(field("Granted folder to scan",duplicateFolder));
+    const duplicateResults=$("div","");duplicateResults.id="laz-connect-duplicates";
+    duplicateSection.append(button("Find exact duplicates","",async()=>{if(!duplicateFolder.value){setStatus("Grant read access to a folder first.","error");return;}setStatus("Checking for exact copies…");try{const result=await request("/duplicates?path="+encodeURIComponent(duplicateFolder.value)+"&approved=true");duplicateResults.replaceChildren();if(!result.groups.length)duplicateResults.append($("p","laz-connect-muted","No exact duplicate groups found."));result.groups.forEach(g=>{const card=$("div","laz-connect-grant"),left=$("div","");left.append($("strong","",g.count+" identical files · "+g.size_bytes+" bytes each));g.files.forEach(p=>left.append($("small","",p)));card.append(left);duplicateResults.append(card);});if(result.truncated)duplicateResults.append($("p","laz-connect-muted","The scan reached its safety limit; results may be incomplete."));setStatus(result.message,"ok");}catch(e){setStatus(e.message,"error");}}),duplicateResults);
     const activity=$("div","laz-connect-section");activity.append($("h3","","Recent activity"));const activityList=$("div","");activityList.id="laz-connect-activity";activityList.append($("p","laz-connect-muted","Loading activity…"));activity.append(activityList);
-    dialog.append(section,activity);
+    dialog.append(section,duplicateSection,activity);
     loadPermissions();
   }
   async function pick(kind) {
@@ -104,6 +110,8 @@
       const p=await request("/permissions");
       const scope=dialog.querySelector("#laz-scope"),approval=dialog.querySelector("#laz-approval");
       if(scope)scope.value=p.scope_mode;if(approval)approval.value=p.approval_mode;
+      const duplicateFolder=dialog.querySelector("#laz-duplicate-folder");
+      if(duplicateFolder){const previous=duplicateFolder.value;duplicateFolder.replaceChildren();p.grants.filter(g=>g.kind==="folder"&&g.capabilities.includes("read")&&p.scope_mode!=="selected_files").forEach(g=>{const o=$("option","",g.label+" — "+g.path);o.value=g.path;duplicateFolder.append(o);});if([...duplicateFolder.options].some(o=>o.value===previous))duplicateFolder.value=previous;}
       const list=dialog.querySelector("#laz-connect-grants");
       if(list){list.replaceChildren();if(!p.grants.length)list.append($("p","laz-connect-muted","No file or folder grants yet."));
         p.grants.forEach(g=>{const row=$("div","laz-connect-grant"),left=$("div","");left.append($("strong","",g.label+" · "+g.kind),$("small","",g.path),$("small","",g.capabilities.join(", ")));const revoke=button("Revoke","",async()=>{try{await request("/permissions/grants/"+encodeURIComponent(g.id),{method:"DELETE"});setStatus("Permission revoked.","ok");await loadPermissions();}catch(e){setStatus(e.message,"error");}});row.append(left,revoke);list.append(row);});}
