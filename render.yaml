@@ -32,5 +32,5 @@ services:
 # The current application stores its journal and preferences in SQLite and
 # uses the workspace directory for files. Render's free filesystem is ephemeral,
 # so those local changes may not survive restarts or redeployments.
-# Authentication and authorization are not implemented. Do not expose this
-# service publicly for real use until access controls are implemented.
+# The service has no authentication or authorization. Keep it private until
+# access controls are available; do not expose it as a public multi-user service.
