@@ -38,3 +38,10 @@ The GitHub Actions workflow builds standalone executables for Windows, macOS, an
 - Delete moves a file to connector quarantine instead of immediately erasing it.
 - Native file pickers require a graphical desktop session.
 - Do not expose the connector port on a network interface or reverse-proxy it publicly.
+
+
+## Optional local AI for device Ask/voice
+
+Device-local Ask and task planning use an Ollama-compatible local model. Install Ollama on the same computer, start its local service, and pull the default model with `ollama pull gemma3:1b`. The connector defaults to `http://127.0.0.1:11434/api/generate`; use `LAZ_CONNECTOR_OLLAMA_URL` and `LAZ_CONNECTOR_OLLAMA_MODEL` to change the local endpoint/model. The connector rejects non-loopback model URLs so private device file content is not sent to a remote AI endpoint.
+
+This is optional. The existing hosted workspace question and task-preview modes remain separate. Device-local Ask currently reads bounded UTF-8 text files in the selected folder; PDF and other binary document extraction is not included in this integration block.
