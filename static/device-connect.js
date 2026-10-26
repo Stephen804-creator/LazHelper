@@ -23,9 +23,9 @@
   function closeModal() { localStorage.setItem(DISMISS_KEY,"1"); backdrop.classList.remove("is-open"); }
   function updateLauncher() { launcher.dataset.state=connected?"connected":"disconnected"; launcher.querySelector("span:last-child").textContent=connected?"Device connected":"Connect Device"; launcher.setAttribute("aria-label",connected?"Device connected; open device permissions":"Connect Device"); }
   function setStatus(message, kind="info") { const node=dialog.querySelector("#laz-connect-status"); if(node){node.textContent=message;node.dataset.kind=kind;} }
-  async function request(path, options={}) {
+  async function request(path, options={}, timeoutMs=6000) {
     const headers={"Content-Type":"application/json",...(state.token?{"Authorization":"Bearer "+state.token}:{})};
-    const controller=new AbortController(), timer=setTimeout(()=>controller.abort(),6000);
+    const controller=new AbortController(), timer=setTimeout(()=>controller.abort(),timeoutMs);
     try {
       const response=await fetch(AGENT+path,{...options,headers:{...headers,...(options.headers||{})},signal:controller.signal,cache:"no-store"});
       let data={}; try{data=await response.json()}catch{}
@@ -59,14 +59,14 @@
     const s=status(connected?"Your device is connected.":"Checking for Laz Connector…",connected?"ok":"info"); s.id="laz-connect-status"; dialog.append(s);
     if(!connected) {
       const pairLabel=$("label","laz-connect-field");
-      pairLabel.append($("span","","One-time pairing code (shown in the Laz Connector terminal)"));
-      const code=$("input",""); code.type="text"; code.autocomplete="one-time-code"; code.inputMode="text"; code.maxLength=7; code.placeholder="ABC-123"; code.setAttribute("aria-label","One-time pairing code"); pairLabel.append(code); dialog.append(pairLabel);
+      pairLabel.append($("span","","One-time pairing code (optional; native approval is tried first)"));
+      const code=$("input",""); code.type="text"; code.autocomplete="one-time-code"; code.inputMode="text"; code.maxLength=7; code.placeholder="Leave blank for OS confirmation"; code.setAttribute("aria-label","Optional one-time pairing code"); pairLabel.append(code); dialog.append(pairLabel);dialog.append($("p","laz-connect-muted","Click Pair this device to approve the connection in a local system dialog. If the dialog is unavailable, enter the one-time code printed by the connector."));
       dialog.append(button("Check connector","",async()=>{setStatus("Checking for Laz Connector…");const r=await checkAgent();if(r.installed)setStatus("Connector found"+(agentVersion?" · version "+agentVersion:"")+". Enter the one-time code to pair.","ok");else setStatus("Connector not detected. Install and start Laz Connector, then try again. "+r.error,"error");}));
       dialog.append(button("Pair this device","primary",async()=>{
         const value=code.value.trim().toUpperCase();
         if(!value){setStatus("Enter the one-time pairing code printed by Laz Connector.","error");return;}
         const b=dialog.querySelector(".laz-connect-btn.primary"); b.disabled=true;
-        try{const r=await request("/pair",{method:"POST",body:JSON.stringify({code:value})});state.token=r.token;localStorage.setItem(TOKEN_KEY,r.token);connected=true;state.connection=await request("/connection");updateLauncher();localStorage.setItem(DISMISS_KEY,"1");render();setStatus("Device connected. Your pairing will be reused on future visits.","ok");await loadPermissions();}
+        try{const r=await request("/pair",{method:"POST",body:JSON.stringify(value?{code:value}:{})},60000);state.token=r.token;localStorage.setItem(TOKEN_KEY,r.token);connected=true;state.connection=await request("/connection");updateLauncher();localStorage.setItem(DISMISS_KEY,"1");render();setStatus("Device connected. Your pairing will be reused on future visits.","ok");await loadPermissions();}
         catch(e){setStatus(e.message,"error");}
         finally{if(b.isConnected)b.disabled=false;}
       }));
