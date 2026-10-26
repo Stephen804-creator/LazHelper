@@ -7,6 +7,8 @@ from pathlib import Path
 from . import config, organizer
 from .scanner import safe_workspace_path, scan_folder, UnsafePath
 
+DB_PATH = config.PROJECT_ROOT / ".lazydesk_state.sqlite3"
+
 DEFAULTS = {"enabled": False, "inbox": "inbox", "interval_minutes": 60, "last_run": None, "last_summary": None}
 
 def _now():
