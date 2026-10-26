@@ -1,0 +1,36 @@
+# Render Blueprint for the current main branch.
+# This version matches main, which uses SQLite and does not require PostgreSQL.
+services:
+  - type: web
+    name: laz-helper
+    runtime: python
+    plan: free
+    region: oregon
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.11
+      - key: LAZYDESK_ALLOWED_ROOT
+        value: ./workspace
+      - key: LAZYDESK_MAX_FILES
+        value: "1500"
+      - key: LAZYDESK_MAX_DEPTH
+        value: "8"
+      - key: LAZYDESK_MAX_FILE_MB
+        value: "20"
+      - key: LAZYDESK_MAX_TEXT_CHARS
+        value: "18000"
+      - key: LAZYDESK_OLLAMA_URL
+        value: http://127.0.0.1:11434
+      - key: LAZYDESK_OLLAMA_MODEL
+        value: gemma3:1b
+      - key: LAZYDESK_AI_TIMEOUT_SECONDS
+        value: "45"
+
+# Important: main currently stores its journal and preferences in SQLite and
+# uses the workspace directory for files. Render's free filesystem is ephemeral,
+# so those local changes are not durable across restarts/redeploys.
+# Do not expose this service publicly for real use until authentication and
+# authorization are implemented; current API endpoints do not require login.
