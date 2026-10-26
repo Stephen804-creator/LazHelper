@@ -16,9 +16,11 @@ services:
       - key: LAZHELPER_ALLOWED_ROOT
         value: ./workspace
       - key: LAZHELPER_OLLAMA_URL
-        sync: false
+        value: https://ollama.com/api
       - key: LAZHELPER_OLLAMA_MODEL
-        value: gemma3:1b
+        value: gemma4:31b
+      - key: OLLAMA_API_KEY
+        sync: false
 
 databases:
   - name: lazhelper-db
