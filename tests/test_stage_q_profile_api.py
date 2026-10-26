@@ -24,6 +24,7 @@ def test_profile_and_memory_api_do_not_enable_file_permissions(tmp_path, monkeyp
 def test_gemma_prompt_uses_opt_in_saved_preferences(tmp_path, monkeypatch):
     monkeypatch.setattr(organizer, "DB_SCHEMA", f"t_{abs(hash(tmp_path.name))}")
     monkeypatch.setattr(config, "OLLAMA_MODEL", "gemma3:1b")
+    monkeypatch.setattr(config, "OLLAMA_API_KEY", "")
     policies.save_instructions([
         {"scope": "global", "instruction": "Use short summaries."},
         {"scope": "folder", "scope_path": "School", "instruction": "Prioritise revision notes."},
@@ -48,15 +49,17 @@ def test_gemma_prompt_uses_opt_in_saved_preferences(tmp_path, monkeypatch):
             return self
         async def __aexit__(self, *args):
             return None
-        async def post(self, url, json):
+        async def post(self, url, json, headers=None):
             captured["url"] = url
             captured["payload"] = json
+            captured["headers"] = headers or {}
             return FakeResponse()
 
     monkeypatch.setattr(ai_engine.httpx, "AsyncClient", FakeClient)
     result = asyncio.run(ai_engine.recommend("notes.txt", "course content", {}, "School/notes.txt"))
     payload = captured["payload"]
     assert payload["model"] == "gemma3:1b"
+    assert captured["headers"] == {}
     system = payload["messages"][0]["content"]
     assert "Use short summaries." in system
     assert "Prioritise revision notes." in system
