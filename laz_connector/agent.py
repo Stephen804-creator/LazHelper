@@ -3,11 +3,15 @@ from __future__ import annotations
 
 import hashlib
 import hmac
+import json
 import os
 import secrets
 import shutil
 import tempfile
 import time
+import urllib.error
+import urllib.request
+from urllib.parse import urlparse
 from pathlib import Path
 from typing import Literal
 
@@ -225,6 +229,18 @@ class OperationRequest(BaseModel):
     path: str = Field(min_length=1, max_length=4096)
     destination: str | None = Field(default=None, max_length=4096)
     content: str | None = Field(default=None, max_length=200_000)
+    approved: bool = False
+
+
+class AssistantAskRequest(BaseModel):
+    path: str = Field(min_length=1, max_length=4096)
+    question: str = Field(min_length=1, max_length=2000)
+    approved: bool = False
+
+
+class AssistantPlanRequest(BaseModel):
+    path: str = Field(min_length=1, max_length=4096)
+    command: str = Field(min_length=1, max_length=2000)
     approved: bool = False
 
 
@@ -502,6 +518,179 @@ async def execute_operation(req: OperationRequest, origin: str = Depends(_auth))
         raise
     _record(req.action, result["status"], f"{req.action}: {Path(req.path).name}")
     return result
+
+
+def _local_model_settings() -> tuple[str, str]:
+    url = os.environ.get("LAZ_CONNECTOR_OLLAMA_URL", "http://127.0.0.1:11434/api/generate").strip()
+    model = os.environ.get("LAZ_CONNECTOR_OLLAMA_MODEL", "gemma3:1b").strip()
+    parsed = urlparse(url)
+    if parsed.scheme != "http" or parsed.hostname not in {"127.0.0.1", "localhost", "::1"}:
+        raise HTTPException(500, "The local AI endpoint must use HTTP on loopback. Laz Connector will not send device files to a remote AI server.")
+    if not model:
+        raise HTTPException(500, "Set LAZ_CONNECTOR_OLLAMA_MODEL to an installed local Ollama model.")
+    return url, model
+
+
+def _local_model_generate(prompt: str, json_mode: bool = False) -> tuple[str, str]:
+    url, model = _local_model_settings()
+    payload = {"model": model, "prompt": prompt, "stream": False}
+    if json_mode:
+        payload["format"] = "json"
+    request = urllib.request.Request(
+        url, data=json.dumps(payload).encode("utf-8"),
+        headers={"Content-Type": "application/json"}, method="POST",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=90) as response:
+            result = json.loads(response.read(2_000_000).decode("utf-8"))
+    except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, OSError, json.JSONDecodeError) as exc:
+        raise HTTPException(
+            503,
+            "Local AI is unavailable. Start Ollama on this device and install the configured model "
+            "(default: gemma3:1b), then retry. File contents are not sent to Render.",
+        ) from exc
+    text = result.get("response")
+    if not isinstance(text, str) or not text.strip():
+        raise HTTPException(502, "The local model returned an empty response.")
+    return text.strip(), model
+
+
+def _assistant_folder(path_value: str, approved: bool, state: dict) -> Path:
+    if state.get("scope_mode") == "ask_every_time" and not approved:
+        raise HTTPException(409, "Reading this folder needs explicit approval.")
+    try:
+        folder = validate_existing_path(path_value, "folder")
+        _grant_for(folder, "read", state)
+    except (UnsafePath, PermissionDenied) as exc:
+        _raise_path_error(exc)
+    return folder
+
+
+def _assistant_inventory(folder: Path, state: dict, include_text: bool = False) -> tuple[list[dict], list[dict]]:
+    inventory: list[dict] = []
+    context: list[dict] = []
+    text_extensions = {".txt", ".md", ".csv", ".json", ".py", ".js", ".ts", ".html", ".css", ".yaml", ".yml", ".xml", ".log", ".ini", ".toml", ".sh", ".sql"}
+    total_text = 0
+    try:
+        children = sorted(folder.iterdir(), key=lambda item: item.name.casefold())[:1000]
+    except OSError as exc:
+        raise HTTPException(400, "Could not list the selected folder.") from exc
+    for item in children:
+        if item.is_symlink():
+            continue
+        try:
+            resolved = item.resolve(strict=True)
+            _grant_for(resolved, "read", _state())
+            stat = item.stat(follow_symlinks=False)
+        except (OSError, UnsafePath, PermissionDenied):
+            continue
+        row = {
+            "name": item.name, "path": str(item), "kind": "folder" if item.is_dir() else "file",
+            "size_bytes": stat.st_size if item.is_file() else None,
+            "modified_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(stat.st_mtime)),
+        }
+        inventory.append(row)
+        if not include_text or not item.is_file() or item.suffix.lower() not in text_extensions:
+            continue
+        if len(context) >= 12 or stat.st_size > 30_000 or total_text >= 120_000:
+            continue
+        try:
+            text = item.read_text(encoding="utf-8")
+        except (UnicodeError, OSError):
+            continue
+        text = text[:min(30_000, 120_000 - total_text)]
+        if not text.strip():
+            continue
+        context.append({"path": str(item), "text": text})
+        total_text += len(text)
+    return inventory, context
+
+
+@router.post("/assistant/ask")
+async def assistant_ask(req: AssistantAskRequest, origin: str = Depends(_auth)):
+    state = _state()
+    folder = _assistant_folder(req.path, req.approved, state)
+    inventory, context = _assistant_inventory(folder, state, include_text=True)
+    prompt = (
+        "You are Laz Helper, a careful local file assistant. Answer the user's question only from the "
+        "device-local evidence below. If evidence is insufficient, say so. Do not invent file contents. "
+        "Do not request or attempt file changes.\n\n"
+        f"Question: {req.question.strip()}\n\n"
+        f"Folder inventory (metadata): {json.dumps(inventory[:100], ensure_ascii=False)}\n\n"
+        f"Readable text excerpts: {json.dumps(context, ensure_ascii=False)}\n\n"
+        "Give a concise, useful answer and mention the evidence file names."
+    )
+    answer, model = _local_model_generate(prompt)
+    sources = [{"path": item["path"], "evidence": "Local text excerpt included for this answer."} for item in context]
+    _record("assistant-ask", "completed", f"Answered a local question using {len(context)} text files in {folder}")
+    return {"answer": answer, "sources": sources, "local_model": model, "local_connector": True, "files_considered": len(inventory)}
+
+
+@router.post("/assistant/plan")
+async def assistant_plan(req: AssistantPlanRequest, origin: str = Depends(_auth)):
+    state = _state()
+    folder = _assistant_folder(req.path, req.approved, state)
+    inventory, _ = _assistant_inventory(folder, state, include_text=False)
+    known_files = [item["path"] for item in inventory if item["kind"] == "file"]
+    prompt = (
+        "You are Laz Helper's local file-organization planner. Produce a JSON object only, with keys "
+        "\"message\" and \"operations\". operations must be an array of at most 10 proposed operations. "
+        "Each operation has action (create, edit, move, rename, or delete), path (absolute path), optional "
+        "destination (absolute path for move/rename), optional content (for create/edit), and reason. "
+        "Never execute anything. Use only exact existing file paths from the inventory as source paths for "
+        "edit/move/rename/delete. For create, path must be inside the selected folder. For move/rename, "
+        "destination must be a full file path, not just a folder. If the request is ambiguous or unsafe, "
+        "return an empty operations array and explain why. Do not invent files.\n\n"
+        f"User request: {req.command.strip()}\n"
+        f"Selected folder: {str(folder)}\n"
+        f"Inventory: {json.dumps(inventory[:200], ensure_ascii=False)}\n"
+        f"Exact existing file paths: {json.dumps(known_files[:200], ensure_ascii=False)}"
+    )
+    raw, model = _local_model_generate(prompt, json_mode=True)
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise HTTPException(502, "The local model did not return a valid JSON plan. Try a more specific request.") from exc
+    if not isinstance(data, dict) or not isinstance(data.get("operations", []), list):
+        raise HTTPException(502, "The local model returned an invalid plan.")
+    operations = []
+    known = set(known_files)
+    root = folder.resolve()
+    for item in data.get("operations", [])[:10]:
+        if not isinstance(item, dict):
+            continue
+        action = item.get("action")
+        path_value = item.get("path")
+        if action not in {"create", "edit", "move", "rename", "delete"} or not isinstance(path_value, str):
+            continue
+        path_obj = Path(path_value)
+        if action in {"edit", "move", "rename", "delete"} and str(path_obj) not in known:
+            continue
+        if action == "create":
+            try:
+                Path(os.path.abspath(path_obj)).parent.relative_to(root)
+            except ValueError:
+                continue
+            except OSError:
+                continue
+        operation = {"action": action, "path": str(path_obj), "reason": str(item.get("reason", ""))[:500]}
+        if action in {"move", "rename"}:
+            destination = item.get("destination")
+            if not isinstance(destination, str) or not destination:
+                continue
+            operation["destination"] = destination
+        if action in {"create", "edit"}:
+            content = item.get("content")
+            if not isinstance(content, str) or len(content) > 200_000:
+                continue
+            operation["content"] = content
+        operations.append(operation)
+    _record("assistant-plan", "prepared", f"Prepared {len(operations)} unexecuted proposals for {folder}")
+    return {
+        "message": str(data.get("message", "Review each proposed operation before applying it."))[:2000],
+        "operations": operations, "local_model": model, "local_connector": True,
+        "executed": False, "selected_folder": str(folder),
+    }
 
 
 app.include_router(router)
