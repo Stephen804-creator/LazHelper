@@ -13,6 +13,17 @@ LazHelper uses one **Render Web Service** to serve the FastAPI application, HTML
 
 The Blueprint connects the web service to PostgreSQL using Render's private connection string exposed as `DATABASE_URL`. Do not paste the database URL into a browser or share it publicly; it contains credentials.
 
+## Configure Gemma 4 through Ollama Cloud
+
+The Blueprint preconfigures these environment variables:
+
+- `LAZHELPER_OLLAMA_URL=https://ollama.com/api`
+- `LAZHELPER_OLLAMA_MODEL=gemma4:31b`
+
+When Render creates the Blueprint, enter your Ollama Cloud API key for the secret environment variable `OLLAMA_API_KEY`. If the service already exists, open **Render → lazhelper → Environment**, add `OLLAMA_API_KEY`, paste the key there, and save/redeploy. Do not put the key in GitHub, source code, browser JavaScript, or screenshots.
+
+LazHelper sends the key as an `Authorization: Bearer` header and calls the Ollama chat endpoint. The AI feature uses the model identifier `gemma4:31b`; this is distinct from the previous local default `gemma3:1b`. Ollama Cloud usage is subject to the account's available free allowance, credits, and model availability. If AI recommendations fail, check Render logs and the Ollama dashboard usage/keys pages. The rest of the app can still run when AI is unavailable.
+
 ## Database behavior
 
 - Local development must also use a PostgreSQL database; configure `DATABASE_URL` in your local environment.
@@ -23,11 +34,10 @@ The Blueprint connects the web service to PostgreSQL using Render's private conn
 ## Important demo limitations
 
 - The service's workspace is the server-side `workspace/` directory, not a visitor's computer. LazHelper cannot access a visitor's local files through a hosted web page. Files in the server workspace are on Render's ephemeral filesystem and may reset after redeploy or restart; PostgreSQL preserves application records, not file contents.
-- Gemma recommendations use the existing Ollama-compatible API integration. The Blueprint intentionally asks you to provide `LAZHELPER_OLLAMA_URL` rather than setting it to `127.0.0.1`, because localhost inside Render is the web-service container and is not your computer. Set `LAZHELPER_OLLAMA_URL` to the base URL of a reachable Ollama-compatible service that has the configured model available, and set `LAZHELPER_OLLAMA_MODEL` to its exact model tag (default `gemma3:1b`). The endpoint must be reachable from Render over the network. If you do not configure it, the app can still deploy and use non-AI file inspection, but Gemma recommendations will be unavailable.
 - LazHelper does not currently provide user authentication. Treat the public deployment as a demonstration using sample/non-sensitive files only. Do not upload or store private documents or credentials in it.
 
 ## Troubleshooting
 
 - If the Blueprint cannot create `lazhelper-db`, check whether the selected Render workspace already has an active free PostgreSQL database. Render permits only one active free PostgreSQL database per workspace. A separate workspace can have its own database, subject to Render's current account limits.
 - If the web service fails its health check, inspect its deploy logs. Database connection or SQL compatibility errors should be fixed before treating the demo as ready.
-- If the web service starts but AI recommendations are unavailable, check the Ollama note above; this does not by itself mean that the web/API deployment failed.
+- If the web service starts but AI recommendations are unavailable, verify the URL, model identifier, `OLLAMA_API_KEY`, and remaining Ollama Cloud usage. The AI service can fail independently of the web/API deployment.
