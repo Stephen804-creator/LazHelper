@@ -7,15 +7,13 @@ from __future__ import annotations
 import hashlib
 import json
 import os
-import sqlite3
 import shutil
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
-from . import config
+from . import config, database
 from .scanner import safe_file_path, UnsafePath
 
-DB_PATH = config.PROJECT_ROOT / ".lazydesk_state.sqlite3"
 DEFAULT_PREFERENCES = {
     "category_rules": {
         "Documents": [".pdf", ".docx", ".txt", ".md", ".rtf"],
@@ -30,23 +28,7 @@ DEFAULT_PREFERENCES = {
     "include_date_in_plan": False,
 }
 def _connect():
-    con = sqlite3.connect(DB_PATH, timeout=10)
-    con.row_factory = sqlite3.Row
-    con.execute("PRAGMA journal_mode=WAL")
-    con.execute("""CREATE TABLE IF NOT EXISTS operation_journal (
-        id INTEGER PRIMARY KEY AUTOINCREMENT, action TEXT NOT NULL,
-        source_path TEXT NOT NULL, destination_path TEXT, status TEXT NOT NULL,
-        created_at TEXT NOT NULL, undone_at TEXT, detail TEXT
-    )""")
-    con.execute("""CREATE TABLE IF NOT EXISTS preferences (
-        key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at TEXT NOT NULL
-    )""")
-    con.execute("""CREATE TABLE IF NOT EXISTS review_queue (
-        path TEXT PRIMARY KEY, reason TEXT NOT NULL, added_at TEXT NOT NULL,
-        status TEXT NOT NULL DEFAULT 'open'
-    )""")
-    con.commit()
-    return con
+    return database.connect()
 def _now():
     return datetime.now(timezone.utc).isoformat()
 
@@ -183,9 +165,10 @@ def apply_plan(items: list[dict[str, str]]):
                 raise FileExistsError("Source changed or destination appeared during review.")
             _move_no_overwrite(source, destination)
             with _connect() as con:
-                cur = con.execute("INSERT INTO operation_journal(action,source_path,destination_path,status,created_at,detail) VALUES(?,?,?,?,?,?)",
+                cur = con.execute("INSERT INTO operation_journal(action,source_path,destination_path,status,created_at,detail) VALUES(?,?,?,?,?,?) RETURNING id",
                                   ("move", source_rel, destination.relative_to(root).as_posix(), "applied", _now(), "User-approved move"))
-                journal_id = cur.lastrowid
+                inserted = cur.fetchone()
+                journal_id = inserted["id"]
             completed.append({"id": journal_id, "source": source_rel, "destination": destination.relative_to(root).as_posix()})
         except Exception as exc:
             failed.append({"source": source_rel, "reason": str(exc)})
