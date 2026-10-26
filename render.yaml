@@ -27,3 +27,14 @@ services:
         value: gemma3:1b
       - key: LAZ_HELPER_AI_TIMEOUT_SECONDS
         value: "45"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: laz-helper-db
+          property: connectionString
+
+databases:
+  - name: laz-helper-db
+    databaseName: laz_helper
+    user: laz_helper
+    region: oregon
+    plan: free
