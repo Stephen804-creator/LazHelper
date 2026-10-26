@@ -24,8 +24,8 @@ LazHelper is designed to keep the user in control. Recommendations and plans are
 - Refuse destination collisions rather than silently overwrite files.
 - Detect exact, byte-for-byte duplicates using SHA-256.
 - Place uncertain files in a persistent **Not Sure** review queue.
-- Keep a local operation journal and support undo when the original path is available.
-- Store personal category preferences locally.
+- Keep a persistent operation journal in PostgreSQL and support undo when the original path is available.
+- Store personal category preferences in PostgreSQL.
 
 ### Workspace intelligence (Stages A–E)
 - Find explainable candidate relationships between files using shared filename terms, folder context, and likely version suffixes.
@@ -168,7 +168,7 @@ LazHelper is designed around local processing and explicit user control, but it 
 - **Metadata-only insights:** workspace insights use file paths/names, extensions, and sizes rather than uploading file contents.
 - **Local AI:** when enabled, extracted content used for a recommendation is sent to the configured Ollama service. Review what you process and configure the service appropriately.
 - **Processing limits:** size, depth, text, and file-count limits help constrain resource use.
-- **No public deployment by default:** the app does not provide authentication. Keep it bound to loopback and do not expose the development server directly to the internet.
+- **No authentication:** LazHelper does not provide user authentication yet. Use only non-sensitive sample files in a public demo; never expose private workspace content or credentials.
 
 Image OCR is not currently enabled; images are represented by metadata. ZIP files are inventoried rather than extracted, and source files are treated as text rather than executed.
 
@@ -190,6 +190,12 @@ The suite includes tests for scanning and path confinement, organisation safegua
 - `docs/stages-f-k.md` — recovery export, project profiles, ZIP inspection, command previews, local evidence retrieval, and read-only workflows.
 - `docs/stages-f-k.md` — recovery export, project profiles, ZIP inspection, command previews, local evidence retrieval, and read-only workflows.
 - `/docs` — interactive API documentation when the local server is running.
+
+## Render deployment
+
+A Render Blueprint is provided in `render.yaml`. It creates one Python Web Service that serves both the FastAPI API and the browser interface, plus a PostgreSQL database for persistent application state. See [docs/render-deployment.md](docs/render-deployment.md) before deploying.
+
+The Blueprint uses the free web-service and PostgreSQL plans for a competition/demo deployment. Render's free PostgreSQL databases expire after 30 days, and the web service filesystem is ephemeral. PostgreSQL preserves application records across redeploys, but it does not preserve files in the server-side workspace. The hosted service also cannot access files on a visitor's personal computer, and local Ollama/Gemma recommendations are unavailable unless a reachable Ollama runtime is configured. Because LazHelper does not yet provide authentication, use only non-sensitive demo files.
 
 ## Contributing
 

@@ -10,7 +10,7 @@ def workspace(tmp_path, monkeypatch):
     (root / "incoming" / "report.txt").write_text("quarterly report", encoding="utf-8")
     (root / "incoming" / "copy.txt").write_text("quarterly report", encoding="utf-8")
     monkeypatch.setattr(config, "ALLOWED_ROOT", root)
-    monkeypatch.setattr(organizer, "DB_PATH", tmp_path / "state.sqlite3")
+    monkeypatch.setattr(organizer, "DB_SCHEMA", f"t_{abs(hash(tmp_path.name))}")
     return root
 
 def test_plan_is_preview_only(workspace):

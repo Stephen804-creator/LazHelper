@@ -8,17 +8,15 @@ import hashlib
 import io
 import json
 import re
-import sqlite3
 import zipfile
 from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
 from typing import Any
 
-from . import config, organizer, workspace_intelligence
+from . import config, database, organizer, workspace_intelligence
 from .extractor import extract_file
 from .scanner import safe_file_path, safe_workspace_path, UnsafePath
 
-DB_PATH = config.PROJECT_ROOT / ".lazhelper_extended.sqlite3"
 MAX_ARCHIVE_ENTRIES = 1000
 MAX_ARCHIVE_UNCOMPRESSED = 128 * 1024 * 1024
 MAX_ARCHIVE_MEMBER_BYTES = 8 * 1024 * 1024
@@ -32,10 +30,10 @@ def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+DB_SCHEMA = "lazhelper_workspace"
+
 def _connect():
-    con = sqlite3.connect(DB_PATH, timeout=10)
-    con.row_factory = sqlite3.Row
-    con.execute("PRAGMA journal_mode=WAL")
+    con = database.connect(schema=DB_SCHEMA, timeout=10)
     con.execute("""CREATE TABLE IF NOT EXISTS project_workspaces (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
