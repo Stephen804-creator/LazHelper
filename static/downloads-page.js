@@ -14,6 +14,7 @@
   let poll = null;
   let scopeMode = "ask_every_time";
   let connectorAvailable = false;
+  let previousPaths = null;
   const make = (tag, cls, text) => { const el=document.createElement(tag); if(cls)el.className=cls; if(text!==undefined)el.textContent=text; return el; };
   const setStatus = (message, kind="info") => { status.textContent=message; status.dataset.kind=kind; };
   const bytes = (n) => {
@@ -33,7 +34,7 @@
   function showDisconnected(message){
     connectorAvailable=false; badge.textContent="Connector disconnected"; badge.dataset.state="disconnected";
     folderSelect.replaceChildren();folderSelect.append(new Option("Connect a folder first",""));
-    rows.replaceChildren();empty.hidden=false;empty.textContent="Connect Laz Connector and grant read access to your Downloads folder to see downloaded files.";
+    rows.replaceChildren();empty.hidden=false;empty.textContent="Connect Laz Connector and grant read access to your Downloads folder to see downloaded files.";previousPaths=null;
     refreshButton.disabled=true;stopPolling();setStatus(message,"error");
   }
   async function loadPermissions(preferredPath){
@@ -79,6 +80,9 @@
       const data=await api.request("/files?path="+encodeURIComponent(path)+"&approved=true");
       rows.replaceChildren();
       const items=(data.items||[]).sort((a,b)=>b.modified_at.localeCompare(a.modified_at));
+      const currentPaths=new Set(items.map(item=>item.path));
+      const newCount=previousPaths===null?0:items.filter(item=>!previousPaths.has(item.path)).length;
+      previousPaths=currentPaths;
       items.forEach(item=>{
         const tr=document.createElement("tr");
         const name=make("td");name.append(make("div","downloads-file-name",item.name),make("div","downloads-kind",item.kind==="folder"?"Folder":"File"));
@@ -88,7 +92,7 @@
         tr.append(name,type,size,modified);rows.append(tr);
       });
       empty.hidden=items.length>0;empty.textContent=items.length?"":"No files found in this folder yet.";
-      setStatus(items.length+" item"+(items.length===1?"":"s")+" found in "+data.path+". "+(scopeMode==="ask_every_time"?"No background refresh is running because your scope requires approval each time.":"The list will refresh while this page is open."),"ok");
+      setStatus((newCount>0?"Detected "+newCount+" new download"+(newCount===1?"":"s")+". ":"")+items.length+" item"+(items.length===1?"":"s")+" found in "+data.path+". "+(scopeMode==="ask_every_time"?"No background refresh is running because your scope requires approval each time.":"The list will refresh while this page is open."),"ok");
     }catch(e){setStatus(e.message||"Could not read the selected folder. Check its permission grant.","error");}
     finally{refreshButton.disabled=false;}
   }
