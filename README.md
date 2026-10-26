@@ -50,7 +50,7 @@ Laz Helper is designed around workspace boundaries and review before action.
 - Image handling provides metadata; OCR is not part of the current scanning workflow.
 - If AI recommendations are enabled, the extracted content used for a recommendation is sent to the configured Ollama service. Review the service configuration before processing sensitive documents.
 
-**Authentication is not yet implemented.** Run Laz Helper locally and do not expose it directly to the public internet or use it to process sensitive workspace data on an unauthenticated deployment.
+**Laz Helper does not provide user authentication.** Run it locally; do not expose it directly to the public internet or process sensitive workspace data through an unauthenticated deployment.
 
 ## Documentation
 
