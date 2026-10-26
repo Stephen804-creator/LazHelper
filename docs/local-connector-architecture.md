@@ -73,3 +73,12 @@ The hosted site may need browser permission for requests to loopback/private-net
 - `LAZ_CONNECTOR_PORT` defaults to `43179`.
 - `LAZ_CONNECTOR_ALLOWED_ORIGINS` accepts a comma-separated list. Defaults cover the Laz Helper Render origin and local development origins.
 - State is stored under the operating system's per-user application configuration directory. On POSIX systems the state file is restricted to the current user where supported.
+
+
+## Local Ask/voice and task planning
+
+The Ask/voice UI has two additional device-local modes: **Ask my device files** and **Plan a task on my device**. They call `/v1/assistant/ask` and `/v1/assistant/plan` on the paired loopback connector, not the hosted Render API. The local connector sends bounded text excerpts or a file inventory to an Ollama-compatible model on loopback only. The default is `gemma3:1b` at `http://127.0.0.1:11434/api/generate`; configure `LAZ_CONNECTOR_OLLAMA_URL` and `LAZ_CONNECTOR_OLLAMA_MODEL` if needed. Remote model URLs are rejected by the connector to prevent device content from being sent off-device.
+
+Install and start Ollama on the same device, then pull the configured model (default `gemma3:1b`). The connector does not silently install a model or download large model weights. If the local model is unavailable, device-local Ask/plan requests return an actionable error; the existing hosted workspace modes remain separate.
+
+Device task planning is proposal-only. The user must review and confirm each operation; every operation is revalidated by the connector's permission, path, collision, and approval guards immediately before execution. Only a bounded set of UTF-8 text formats is included in local question context; binary files and PDFs are listed as inventory items but are not text-extracted by this first integration.
