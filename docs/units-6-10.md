@@ -19,6 +19,6 @@ Persist user category rules and organisation preferences locally. Preference inp
 - Scan and duplicate discovery are read-only.
 - Plan generation never mutates files.
 - Moves require a separate explicit apply call with per-item approval.
-- No overwrite or delete endpoint exists.
+- The hosted workspace API does not expose a delete endpoint. The separate local connector has a delete-to-quarantine operation, gated by a delete grant and explicit approval.
 - Undo never overwrites an existing file.
-- Run only on loopback; this prototype has no authentication and is not suitable for public exposure.
+- The original local workspace prototype has no authentication and is not suitable for public exposure. The separate connector has its own pairing/token checks and must bind to loopback only.

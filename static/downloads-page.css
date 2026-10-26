@@ -1,0 +1,16 @@
+/* Downloads page: additive styles, preserving the existing Laz Helper design system. */
+.downloads-page{scroll-margin-top:24px}
+.downloads-controls{display:flex;flex-wrap:wrap;align-items:end;gap:10px;margin:18px 0}
+.downloads-controls label{display:flex;flex-direction:column;gap:6px;font-size:14px;font-weight:600;min-width:180px}
+.downloads-controls select{min-width:min(100%,280px);max-width:100%;padding:11px;border:1px solid var(--line,#dcdfd3);border-radius:10px;background:var(--surface,#fff);color:inherit}
+.downloads-controls button{border:1px solid var(--line,#dcdfd3);border-radius:10px;padding:11px 14px;background:var(--surface,#fff);color:inherit;font:inherit;cursor:pointer}
+.downloads-controls button:disabled{opacity:.55;cursor:wait}
+.downloads-list-wrap{overflow-x:auto}
+.downloads-list-wrap table{width:100%;border-collapse:collapse}
+.downloads-list-wrap th,.downloads-list-wrap td{text-align:left;padding:12px 10px;border-bottom:1px solid var(--line,#dcdfd3);overflow-wrap:anywhere}
+.downloads-list-wrap th{font-size:13px;color:var(--mute,#5b675f)}
+.downloads-file-name{font-weight:600}
+.downloads-kind{font-size:12px;color:var(--mute,#5b675f)}
+#downloads-connection-state[data-state="connected"]{background:#e2f2e6;color:#215c35}
+#downloads-connection-state[data-state="disconnected"]{background:#fae7e2;color:#812d20}
+@media(max-width:600px){.downloads-controls{align-items:stretch;flex-direction:column}.downloads-controls label,.downloads-controls select{width:100%;min-width:0}.downloads-list-wrap table{min-width:520px}}
