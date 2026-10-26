@@ -50,6 +50,21 @@ LazHelper is designed to keep the user in control. Recommendations and plans are
 - Keep Sloth Mode disabled by default; scheduled reviews do not move or delete files.
 - View metadata-only workspace insights: file counts, extensions, folder summaries, total size, and largest files.
 
+
+## Device connection and Downloads (development branch)
+
+The connector work adds a separate local service for files on the user's own device. The website cannot access a private device filesystem by itself; the user must install and pair Laz Connector, then grant a folder or file and the capabilities needed for each operation.
+
+- The **Downloads** page can list the user's explicitly granted Downloads folder and refresh its listing while the page is open, subject to the selected approval mode.
+- The Ask/voice interface has device-local modes that call the paired connector directly. Text questions and file-organization plans use an Ollama-compatible model on loopback by default (`gemma3:1b`); device file contents are not sent to Render.
+- Device-local Ask currently reads bounded UTF-8 text files directly inside the selected folder. PDF and other binary files can appear in the inventory, but this connector path does not extract their contents yet.
+- Task plans are not executed automatically. Each proposed operation must pass connector permission and path checks, and the user confirms operations before they run. Delete moves an individual file to quarantine.
+- Install Ollama and pull the configured model separately if you want device-local AI. The connector installer does not silently install Ollama or download model weights.
+- A website cannot intercept all browser download events without a browser extension. This page reads the permitted Downloads folder instead; new files appear when the list refreshes.
+- The connector executable release workflow is prepared, but downloadable release packages are not published until a `connector-v*` release tag is created.
+
+These features remain under development in the open pull request. They have not yet completed full browser-based end-to-end validation.
+
 ## Project status
 
 This development line contains Units 1–13 plus workspace-intelligence Stages A–K:
