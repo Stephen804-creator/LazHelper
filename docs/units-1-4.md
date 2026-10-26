@@ -32,7 +32,7 @@ The connector stores grants and activity on the user's device. A grant is limite
 The first connector implementation includes:
 - loopback-only HTTP service;
 - health and identity endpoint;
-- one-time pairing code, persisted pairing token, and authenticated API calls;
+- native OS confirmation for first-time pairing, with a one-time terminal code as fallback; persisted pairing token and authenticated API calls;
 - native file/folder picker where the host supports a graphical desktop;
 - file/folder grants with separate read, create, edit, move, rename, and delete capabilities;
 - path-boundary and symlink checks;
@@ -48,7 +48,7 @@ The web module:
 - keeps a persistent Connect Device control available;
 - checks whether the local connector is running;
 - provides an installation/release route when it is missing;
-- pairs using the one-time code shown by the local connector;
+- pairs through a native OS confirmation when available, with the one-time terminal code as fallback;
 - stores the paired token in browser-local storage and reconnects automatically on later visits;
 - shows disconnected/reconnect status if the connector is stopped or removed;
 - exposes permission scope, folder/file selection, capability checkboxes, approval mode, grant revocation, and recent activity.
