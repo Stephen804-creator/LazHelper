@@ -58,5 +58,5 @@ The web module:
 - A browser-only PWA cannot install or run a local executable by itself.
 - A web page cannot bypass OS permissions. The local connector must be installed and running, and the user must approve installation and the requested file/folder grants.
 - Native file picking depends on a desktop GUI. Headless environments may require the CLI/configuration route.
-- Release installers are built by the repository workflow when a connector release tag is published; until a release exists, the release page may not contain a downloadable binary.
+- Standalone executable release packages are built by the repository workflow when a connector release tag is published; until a release exists, the release page may not contain a downloadable binary.
 - These units do not yet replace the existing workspace APIs with connector-backed file operations. The connector API is the safe local foundation; the next integration step must route file requests through the paired connector rather than sending private file contents to Render.
