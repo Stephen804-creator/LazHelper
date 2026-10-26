@@ -54,6 +54,8 @@ Laz Helper is designed around workspace boundaries and review before action.
 
 ## Documentation
 
+See the [documentation index](docs/README.md) for the complete guide to the project's supporting documentation.
+
 - [Product overview](docs/product-overview.md)
 - [Architecture](docs/architecture.md)
 - [File organization](docs/file-organization.md)
