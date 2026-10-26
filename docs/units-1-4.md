@@ -59,7 +59,12 @@ The web module:
 - A web page cannot bypass OS permissions. The local connector must be installed and running, and the user must approve installation and the requested file/folder grants.
 - Native file picking depends on a desktop GUI. Headless environments may require the CLI/configuration route.
 - Standalone executable release packages are built by the repository workflow when a connector release tag is published; until a release exists, the release page may not contain a downloadable binary.
-- These units do not yet replace the existing workspace APIs with connector-backed file operations. The connector API is the safe local foundation; the next integration step must route file requests through the paired connector rather than sending private file contents to Render.
+- The existing hosted workspace modes remain separate. Ask/voice now includes device-local modes that call the paired connector's `/v1/assistant/ask` and `/v1/assistant/plan` endpoints directly; device file contents are not sent to Render.
+- Device-local Ask/plan requires a local Ollama-compatible model on the same device (default `gemma3:1b`). The connector rejects non-loopback model endpoints. The model is not bundled or installed automatically.
+- Device task plans are proposals only. The user reviews and confirms each operation, which is revalidated by the connector before execution.
+- Device-local question context currently supports bounded UTF-8 text formats. PDFs and other binary formats can appear in the Downloads inventory but are not text-extracted by this implementation block.
+- The Downloads page lists a user-granted folder and refreshes it when the permission scope allows. It does not intercept browser download events; the browser's own download manager is not automatically connected.
+- Full browser end-to-end testing remains outstanding. Standalone executable packages are still built only when a `connector-v*` tag is published.
 
 
 ## Downloads page — device-local browser downloads
