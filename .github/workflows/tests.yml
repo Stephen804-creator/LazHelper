@@ -2,7 +2,7 @@ name: Laz Helper tests
 on:
   pull_request:
   push:
-    branches: [main, "build/units-1-5"]
+    branches: [main]
 jobs:
   tests:
     runs-on: ubuntu-latest
