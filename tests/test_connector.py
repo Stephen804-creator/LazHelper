@@ -42,7 +42,7 @@ def test_health_identifies_connector_without_exposing_paths(client):
 def test_pairing_code_is_one_time_and_token_is_origin_bound(client):
     token = pair(client)
     assert client.get("/v1/connection", headers=auth(token)).json()["connected"] is True
-    old_code = "BAD-CODE"
+    old_code = "BAD-COD"
     rejected = client.post("/v1/pair", json={"code": old_code}, headers={"Origin": ORIGIN})
     assert rejected.status_code == 401
     rejected_origin = client.get("/v1/connection", headers={"Origin": "https://untrusted.example", "Authorization": f"Bearer {token}"})
