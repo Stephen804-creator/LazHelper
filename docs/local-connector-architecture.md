@@ -25,7 +25,8 @@ All endpoints are under `/v1`.
 - `POST /v1/permissions/pick` — open a native file/folder picker and add a grant with selected capabilities.
 - `DELETE /v1/permissions/grants/{grant_id}` — revoke a grant.
 - `GET /v1/activity` — return recent local activity.
-- `GET /v1/files` and `GET /v1/files/content` — enumerate or read files only inside a read grant.
+- `GET /v1/files` and `GET /v1/files/content` — enumerate or read files only inside a read grant; the `ask_every_time` scope requires an explicit approval flag.
+- `GET /v1/duplicates` — bounded, read-only SHA-256 duplicate scan inside a read-granted folder; results never trigger deletion.
 - `POST /v1/operations/preview` — validate an operation without changing a file.
 - `POST /v1/operations/execute` — execute a permitted operation after approval policy checks.
 
@@ -37,7 +38,7 @@ Scope modes:
 - `permitted_locations`: use all locations the user explicitly granted and the OS allows.
 - `selected_folders`: restrict access to folder grants.
 - `selected_files`: restrict access to individual file grants.
-- `ask_every_time`: keep the configured grants but require a fresh explicit approval for each file-changing action.
+- `ask_every_time`: keep the configured grants but require a fresh explicit approval for each local file read and file-changing action.
 
 Approval modes:
 - `ask_every_time`: every mutation requires an explicit approval flag from the UI.
