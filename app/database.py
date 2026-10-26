@@ -37,7 +37,7 @@ class ConnectionAdapter:
         return self.connection.__exit__(exc_type, exc, traceback)
 
 
-def connect() -> ConnectionAdapter:
+def connect(sqlite_path: Path | None = None) -> ConnectionAdapter:
     """Connect to DATABASE_URL when configured; otherwise use local SQLite."""
     database_url = os.getenv("DATABASE_URL", "").strip()
     if database_url:
@@ -75,8 +75,9 @@ def connect() -> ConnectionAdapter:
         con.commit()
         return con
 
-    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-    raw = sqlite3.connect(DB_PATH, timeout=10)
+    path = sqlite_path or DB_PATH
+    path.parent.mkdir(parents=True, exist_ok=True)
+    raw = sqlite3.connect(path, timeout=10)
     raw.row_factory = sqlite3.Row
     raw.execute("PRAGMA journal_mode=WAL")
     con = ConnectionAdapter(raw, postgres=False)
