@@ -2,59 +2,43 @@
 
 **Understand your files. Organise your workspace with confidence.**
 
-Laz Helper is a local-first file-understanding assistant that helps you inspect a workspace, understand supported documents, and organise files through reviewable recommendations. It combines bounded file scanning, content extraction, optional AI assistance, and safeguards that keep file-changing actions under your control.
+Laz Helper helps you make sense of busy folders, understand documents, and organise files with less manual effort. Its review-first workflow brings file scanning, document understanding, AI-assisted recommendations, duplicate discovery, and workspace insights together in one straightforward interface.
 
-Its workflow is simple: **Scan → Understand → Recommend → Review → Organise**.
+**Scan → Understand → Review → Organise**
 
-## Features
+## What you can do
 
-### File scanning and document understanding
-- Scan a configured workspace with limits on traversal depth, file count, and file size.
-- Extract text and metadata from supported formats, including PDF, DOCX, TXT, Markdown, RTF, CSV, XLS/XLSX, and PPTX.
-- Inspect common image formats through metadata and list ZIP archive contents without extracting them.
-- Inspect source and structured-text files as text; scanned code is not executed.
-- Continue using scanning and supported extraction without an AI service.
+### Understand your files
+- Scan a workspace with configurable limits for depth, file count, and file size.
+- Extract text and metadata from PDF, DOCX, TXT, Markdown, RTF, CSV, XLS/XLSX, and PPTX files.
+- Inspect common image metadata and view ZIP archive contents without extracting them.
+- Review source and structured-text files without executing them.
 
-### AI-assisted recommendations
-- Optionally use an Ollama model to generate structured file descriptions, summaries, and organisation suggestions.
-- Sanitize proposed filenames and categories before presenting recommendations.
-- Treat AI output as advisory: users review suggestions before applying file changes.
+### Get AI-assisted recommendations
+- Use an Ollama-compatible model to generate file descriptions, summaries, and organization suggestions.
+- Review recommendations and proposed names before applying file changes.
+- Keep document processing and organization decisions transparent and under your control.
 
-### Review-first file organisation
+### Organise with confidence
 - Preview proposed destinations using configurable file-category rules.
-- Require explicit approval before moving files.
-- Refuse destination collisions rather than silently overwriting existing files.
+- Approve file moves explicitly.
 - Identify exact duplicates using file hashes.
-- Place uncertain files in a review queue instead of forcing a category.
-- Record supported file operations and provide undo when the original location is available.
+- Send uncertain files to a review queue.
+- Review operation history and undo supported moves when the original location is available.
 
-### Workspace preferences and scheduled review
-- Configure category rules and organisation preferences for a workspace.
-- Use optional **Sloth Mode** to review a chosen inbox on a schedule.
-- See which files are ready for review, need attention, or have destination conflicts. Scheduled reviews prepare summaries and do not move or delete files automatically.
+### Keep your workspace in view
+- Configure organization rules and preferences.
+- Use Sloth Mode to prepare scheduled inbox-review summaries.
+- See file counts, extension and folder distributions, total size, and largest files.
+- Review summaries before deciding what needs attention.
 
-### Workspace insights
-- Summarise file counts, file extensions, folder distribution, total size, and largest files.
-- Generate these insights from file metadata without sending file contents to an AI provider.
+## Built around user control
 
-## Safety and privacy
-
-Laz Helper is designed around workspace boundaries and review before action.
-
-- Scanning is restricted to the configured workspace root, and symbolic links are not followed.
-- Scan depth, file counts, file size, and extracted text are bounded.
-- Scanning and extraction do not change files.
-- File moves require an explicit approval step; destination collisions are refused.
-- Duplicate detection reports matches rather than deleting files.
-- ZIP files are inventoried rather than extracted, and source code is treated as text rather than executed.
-- Image handling provides metadata; OCR is not part of the current scanning workflow.
-- If AI recommendations are enabled, the extracted content used for a recommendation is sent to the configured Ollama service. Review the service configuration before processing sensitive documents.
-
-**Laz Helper does not provide user authentication.** Run it locally; do not expose it directly to the public internet or process sensitive workspace data through an unauthenticated deployment.
+Laz Helper keeps scanning and file changes separate. Scanning and extraction leave files in place; organization plans are presented for review; approved moves are recorded; and duplicate discovery reports matches rather than deleting files. Workspace insights use file metadata to summarize a collection.
 
 ## Documentation
 
-See the [documentation index](docs/README.md) for the complete guide to the project's supporting documentation.
+The [documentation index](docs/README.md) provides guides to the product, architecture, file organization, scheduled reviews, and privacy.
 
 - [Product overview](docs/product-overview.md)
 - [Architecture](docs/architecture.md)
@@ -65,18 +49,18 @@ See the [documentation index](docs/README.md) for the complete guide to the proj
 ## Technology
 
 - Python 3.11+
-- FastAPI
-- Pydantic
-- Ollama (optional AI recommendations)
-- Pytest
+- FastAPI and Pydantic
+- Ollama-compatible AI models
+- SQLite for local preferences and operation history
+- Pytest for automated tests
 
-The repository licence and the selected AI model's licence are separate. Check the model's own usage terms and hardware requirements.
+Laz Helper's AI integration is designed to work with Ollama-compatible models, including open-weight models such as Gemma. Choose a model that suits your device and intended workload.
 
-## Run locally
+## Get started
 
-Requirements: Python 3.11 or later and Git. Ollama is optional.
+Requirements: Python 3.11 or later and Git.
 
-Clone the repository and enter the project directory:
+Clone the repository and create a virtual environment:
 
 ```bash
 git clone https://github.com/Stephen804-creator/LazHelper.git
@@ -84,7 +68,7 @@ cd LazHelper
 python -m venv .venv
 ```
 
-Activate the virtual environment.
+Activate the environment.
 
 **Windows PowerShell**
 ```powershell
@@ -102,37 +86,33 @@ Install dependencies:
 python -m pip install -r requirements.txt
 ```
 
-Copy `.env.example` to `.env`, review the workspace and AI settings, then start the application:
+Copy `.env.example` to `.env`, review the workspace settings, and start Laz Helper:
 
 ```bash
 uvicorn app.main:app --reload
 ```
 
-Open http://127.0.0.1:8000 in your browser. Keep the development server local.
+Open http://127.0.0.1:8000 in your browser.
 
-## Optional AI setup
+## AI-assisted recommendations
 
-Install and start Ollama separately, then download a model compatible with your device and usage requirements. For example:
+Laz Helper uses Ollama for AI-assisted file descriptions, summaries, and organization suggestions. Install and start Ollama, then download a model suited to your device. For example:
 
 ```bash
 ollama pull gemma3:1b
 ```
 
-Configure the selected model in your `.env` file. Laz Helper does not download models automatically. File scanning and supported content extraction remain available when Ollama is unavailable.
+Set the model and Ollama endpoint in your `.env` configuration. File scanning, supported document extraction, organization previews, and workspace insights are available through the application workflow.
 
-## Tests
-
-Run the test suite from the project directory:
+## Run tests
 
 ```bash
 python -m pytest -q
 ```
 
-Review the latest GitHub Actions result before relying on a particular commit or branch. A test suite being present does not by itself mean every test has passed.
-
 ## Contributing
 
-Bug reports, focused improvements, documentation updates, and tests are welcome. Changes involving file operations should preserve the project's safety contract: remain inside the configured workspace, preview proposed changes, require approval for moves, refuse overwrites, and never delete user files automatically.
+Bug reports, focused improvements, documentation updates, and tests are welcome. Contributions to file organization should preserve the review-first workflow and keep file-changing actions under the user's control.
 
 ## Maintainer
 
