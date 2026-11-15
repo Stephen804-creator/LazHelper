@@ -130,8 +130,8 @@ def _open_directory_fd(relative_path="."):
                     dir_fd=current_fd,
                 )
             except OSError as error:
-                if error.errno == errno.ELOOP:
-                    raise UnsafePath("Symlinks are not followed.") from error
+                if error.errno in {errno.ELOOP, errno.ENOTDIR}:
+                    raise UnsafePath("Symlinks or non-directory path components are not allowed.") from error
                 raise
             if current_fd != root_fd:
                 os.close(current_fd)
@@ -249,8 +249,8 @@ def ensure_workspace_directory(relative_path):
                         dir_fd=current_fd,
                     )
                 except OSError as error:
-                    if error.errno == errno.ELOOP:
-                        raise UnsafePath("Symlinks are not followed.") from error
+                    if error.errno in {errno.ELOOP, errno.ENOTDIR}:
+                        raise UnsafePath("Symlinks or non-directory path components are not allowed.") from error
                     raise
             except OSError as error:
                 if error.errno == errno.ELOOP:
