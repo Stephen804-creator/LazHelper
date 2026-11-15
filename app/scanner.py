@@ -49,6 +49,20 @@ def _validate_relative(value: str | Path) -> Path:
     path = Path(raw)
     if path.is_absolute() or ".." in path.parts:
         raise UnsafePath("Use a relative path inside the configured workspace.")
+
+    reserved_names = (
+        {"CON", "PRN", "AUX", "NUL"}
+        | {f"COM{index}" for index in range(1, 10)}
+        | {f"LPT{index}" for index in range(1, 10)}
+    )
+    for part in path.parts:
+        if (
+            any(ord(char) < 32 or char in '<>:"|?*' for char in part)
+            or part.endswith((" ", "."))
+            or part.split(".")[0].upper() in reserved_names
+        ):
+            raise UnsafePath("Path contains a name that is unsafe or invalid on supported platforms.")
+
     return path
 
 
