@@ -180,7 +180,7 @@ def open_workspace_file(relative_path):
                     dir_fd=parent_fd,
                 )
             except OSError as error:
-                if error.errno == errno.ELOOP:
+                if error.errno in {errno.ELOOP, errno.ENOTDIR}:
                     raise UnsafePath("Symlinks are not followed.") from error
                 raise
         finally:
@@ -253,7 +253,7 @@ def ensure_workspace_directory(relative_path):
                         raise UnsafePath("Symlinks or non-directory path components are not allowed.") from error
                     raise
             except OSError as error:
-                if error.errno == errno.ELOOP:
+                if error.errno in {errno.ELOOP, errno.ENOTDIR}:
                     raise UnsafePath("Symlinks are not followed.") from error
                 raise
             if current_fd != root_fd:
@@ -287,7 +287,7 @@ def create_workspace_file(relative_path):
                     dir_fd=parent_fd,
                 )
             except OSError as error:
-                if error.errno == errno.ELOOP:
+                if error.errno in {errno.ELOOP, errno.ENOTDIR}:
                     raise UnsafePath("Destination must not be a symlink.") from error
                 raise
         finally:
