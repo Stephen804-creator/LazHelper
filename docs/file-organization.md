@@ -18,7 +18,7 @@ Files that do not match an organization rule can be placed in the review queue. 
 
 ## Operation journal and undo
 
-Successful approved moves are recorded in the local operation journal. Undo attempts to restore a file to its original path and refuses to overwrite an existing destination. Recovery depends on the file and original location still being available; the journal is not a backup system.
+An operation-journal intent is recorded before an approved move begins. Completed moves are marked applied; undo records an in-progress state before moving a file back. If the process or database fails between filesystem and journal updates, an entry may remain marked pending or undoing and needs manual inspection. Undo refuses to overwrite an existing original path. The journal is not a backup system.
 
 ## Preferences
 
@@ -34,3 +34,5 @@ Organization rules and supported preferences are stored locally. Review the conf
 - All file operations must remain within the configured workspace.
 - Path inputs must be relative and cannot use parent traversal, drive prefixes, or backslash separators.
 - POSIX reads and moves use no-follow file handles and exclusive destination creation to reduce symlink and destination-race risks.
+- File metadata is checked before and after copying; a source that changes during a move is not removed.
+- The journal records intent before changing the filesystem; interrupted operations remain visible as pending recovery states.
