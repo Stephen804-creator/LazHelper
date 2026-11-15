@@ -241,13 +241,7 @@ async function settings() {
       rows.querySelectorAll(".cat").forEach(r => { const n = r.querySelector(".cn").value.trim(), e = r.querySelector(".ce").value.split(/[,\s]+/).filter(Boolean); if (n) rules[n] = e; });
       try { S.prefs = await api("/api/preferences", { method: "PUT", body: { category_rules: rules, include_date_in_plan: date.classList.contains("on") } }); S.rules = JSON.parse(JSON.stringify(S.prefs.category_rules)); S.scanned = false; toast("Settings saved. Scan again to see new suggestions."); settings(); } catch (e) { toast(e.message); }
     } }, "Save settings"),
-    el("button", {
-      onclick: () => {
-        sessionStorage.removeItem(TOKEN_STORAGE_KEY);
-        apiToken = "";
-        showAuth("Laz Helper is locked.");
-      }
-    }, "Lock Laz Helper"));
+    el("button", { onclick: lockWorkspace }, "Lock Laz Helper"));
 }
 
 function go(v) {
@@ -260,6 +254,25 @@ function go(v) {
 document.querySelectorAll("#nav button").forEach(b => b.addEventListener("click", () => go(b.dataset.v)));
 $("#sheet").addEventListener("click", e => { if (e.target.id === "sheet") closeSheet(); });
 document.addEventListener("keydown", e => { if (e.key === "Escape") closeSheet(); });
+
+function lockWorkspace() {
+  sessionStorage.removeItem(TOKEN_STORAGE_KEY);
+  apiToken = "";
+  S.files = [];
+  S.plan = [];
+  S.sel.clear();
+  S.dups = null;
+  S.queue = [];
+  S.journal = null;
+  S.ins = null;
+  S.prefs = null;
+  S.rules = {};
+  S.sloth = null;
+  S.scanned = false;
+  S.view = "home";
+  S.busy = false;
+  showAuth("Laz Helper is locked.");
+}
 
 function showAuth(message = "") {
   $(".shell").hidden = true;
