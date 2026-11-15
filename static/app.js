@@ -1,5 +1,7 @@
 "use strict";
 const $ = s => document.querySelector(s);
+const TOKEN_STORAGE_KEY = "laz-helper-api-token";
+let apiToken = sessionStorage.getItem(TOKEN_STORAGE_KEY) || "";
 function el(t, a, ...k) {
   const e = document.createElement(t);
   for (const [x, v] of Object.entries(a || {})) {
@@ -12,8 +14,15 @@ function el(t, a, ...k) {
 }
 async function api(p, o) {
   let r;
+  const headers = {};
+  if (apiToken) headers.Authorization = "Bearer " + apiToken;
+  if (o && o.body !== undefined) headers["Content-Type"] = "application/json";
   try {
-    r = await fetch(p, o ? { method: o.method, headers: { "Content-Type": "application/json" }, body: o.body ? JSON.stringify(o.body) : undefined } : undefined);
+    r = await fetch(p, {
+      method: o && o.method ? o.method : "GET",
+      headers,
+      body: o && o.body !== undefined ? JSON.stringify(o.body) : undefined
+    });
   } catch { throw new Error("Couldn't reach Laz Helper. Check your connection and try again."); }
   let d = null;
   try { d = await r.json(); } catch {}
@@ -235,8 +244,55 @@ document.querySelectorAll("#nav button").forEach(b => b.addEventListener("click"
 $("#sheet").addEventListener("click", e => { if (e.target.id === "sheet") closeSheet(); });
 document.addEventListener("keydown", e => { if (e.key === "Escape") closeSheet(); });
 
-(async function init() {
+function showAuth(message = "") {
+  $(".shell").hidden = true;
+  $("#authGate").hidden = false;
+  const error = $("#authError");
+  error.textContent = message;
+  error.hidden = !message;
+  $("#apiToken").focus();
+}
+
+async function startWorkspace() {
+  $(".shell").hidden = false;
+  $("#authGate").hidden = true;
   home();
-  await Promise.all([loadIns(), api("/api/sloth-mode").then(s => { S.sloth = s; }).catch(() => {})]);
+  await Promise.all([
+    loadIns(),
+    api("/api/sloth-mode").then(s => { S.sloth = s; }).catch(() => {})
+  ]);
   if (S.view === "home") home();
+}
+
+$("#authForm").addEventListener("submit", async event => {
+  event.preventDefault();
+  const input = $("#apiToken");
+  const token = input.value.trim();
+  if (!token) return showAuth("Enter your access token.");
+  apiToken = token;
+  try {
+    await api("/api/config");
+    sessionStorage.setItem(TOKEN_STORAGE_KEY, token);
+    input.value = "";
+    await startWorkspace();
+  } catch (error) {
+    apiToken = "";
+    showAuth(
+      error.message.includes("not configured")
+        ? "The server has no access token configured. Set LAZ_HELPER_API_TOKEN first."
+        : "That access token was not accepted. Check it and try again."
+    );
+  }
+});
+
+(async function init() {
+  if (!apiToken) return showAuth();
+  try {
+    await api("/api/config");
+    await startWorkspace();
+  } catch {
+    apiToken = "";
+    sessionStorage.removeItem(TOKEN_STORAGE_KEY);
+    showAuth("Your access token is missing or no longer valid. Enter it again.");
+  }
 })();
