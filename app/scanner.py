@@ -4,6 +4,7 @@ from __future__ import annotations
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
+import errno
 import os
 import re
 import stat
@@ -122,11 +123,16 @@ def _open_directory_fd(relative_path="."):
         for name in part.parts:
             if name in ("", "."):
                 continue
-            next_fd = os.open(
-                name,
-                os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW,
-                dir_fd=current_fd,
-            )
+            try:
+                next_fd = os.open(
+                    name,
+                    os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW,
+                    dir_fd=current_fd,
+                )
+            except OSError as error:
+                if error.errno == errno.ELOOP:
+                    raise UnsafePath("Symlinks are not followed.") from error
+                raise
             if current_fd != root_fd:
                 os.close(current_fd)
             current_fd = next_fd
@@ -167,11 +173,16 @@ def open_workspace_file(relative_path):
     if os.name == "posix" and hasattr(os, "O_NOFOLLOW") and hasattr(os, "O_DIRECTORY"):
         parent_fd = _open_directory_fd(Path(*part.parts[:-1]) if len(part.parts) > 1 else ".")
         try:
-            fd = os.open(
-                part.parts[-1],
-                os.O_RDONLY | os.O_NOFOLLOW,
-                dir_fd=parent_fd,
-            )
+            try:
+                fd = os.open(
+                    part.parts[-1],
+                    os.O_RDONLY | os.O_NOFOLLOW,
+                    dir_fd=parent_fd,
+                )
+            except OSError as error:
+                if error.errno == errno.ELOOP:
+                    raise UnsafePath("Symlinks are not followed.") from error
+                raise
         finally:
             os.close(parent_fd)
     else:
@@ -231,11 +242,16 @@ def ensure_workspace_directory(relative_path):
                 )
             except FileNotFoundError:
                 os.mkdir(name, mode=0o700, dir_fd=current_fd)
-                next_fd = os.open(
-                    name,
-                    os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW,
-                    dir_fd=current_fd,
-                )
+                try:
+                    next_fd = os.open(
+                        name,
+                        os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW,
+                        dir_fd=current_fd,
+                    )
+                except OSError as error:
+                    if error.errno == errno.ELOOP:
+                        raise UnsafePath("Symlinks are not followed.") from error
+                    raise
             if current_fd != root_fd:
                 os.close(current_fd)
             current_fd = next_fd
@@ -259,12 +275,17 @@ def create_workspace_file(relative_path):
     if os.name == "posix" and hasattr(os, "O_NOFOLLOW") and hasattr(os, "O_DIRECTORY"):
         parent_fd = _open_directory_fd(parent)
         try:
-            fd = os.open(
-                part.parts[-1],
-                os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW,
-                0o600,
-                dir_fd=parent_fd,
-            )
+            try:
+                fd = os.open(
+                    part.parts[-1],
+                    os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW,
+                    0o600,
+                    dir_fd=parent_fd,
+                )
+            except OSError as error:
+                if error.errno == errno.ELOOP:
+                    raise UnsafePath("Destination must not be a symlink.") from error
+                raise
         finally:
             os.close(parent_fd)
         with os.fdopen(fd, "wb") as stream:
