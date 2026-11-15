@@ -232,31 +232,40 @@ def resolve_queue_item(path: str, decision: str):
         if cur.rowcount == 0: raise ValueError("Open review item not found.")
     return {"path": path, "status": decision}
 def find_duplicates(relative_path: str = "."):
-    from .scanner import safe_workspace_path
-    folder = safe_workspace_path(relative_path)
+    from .scanner import scan_folder
+
+    result = scan_folder(relative_path)
     groups: dict[str, list[dict[str, Any]]] = {}
     checked = 0
-    for current, dirs, names in os.walk(folder, followlinks=False):
-        dirs[:] = [d for d in dirs if not (Path(current) / d).is_symlink()]
-        for name in names:
-            path = Path(current) / name
-            try:
-                if path.is_symlink() or not path.is_file() or path.stat().st_size > config.MAX_FILE_BYTES: continue
-                rel = path.relative_to(config.ALLOWED_ROOT.resolve()).as_posix()
-                digest = hashlib.sha256()
-                with open_workspace_file(rel) as stream:
-                    file_stat = os.fstat(stream.fileno())
-                    for chunk in iter(lambda: stream.read(1024 * 1024), b""):
-                        digest.update(chunk)
-                groups.setdefault(digest.hexdigest(), []).append({
-                    "path": rel,
-                    "size_bytes": file_stat.st_size
-                })
-                checked += 1
-                if checked >= config.MAX_FILES: break
-            except OSError:
-                continue
-        if checked >= config.MAX_FILES: break
-    duplicates = [{"sha256": digest, "files": files, "count": len(files)} for digest, files in groups.items() if len(files) > 1]
-    return {"groups": duplicates, "duplicate_files": sum(g["count"] for g in duplicates), "files_checked": checked,
-            "message": "Exact byte-for-byte matches only. No files were removed or changed."}
+
+    for record in result["files"]:
+        if record.size_bytes > config.MAX_FILE_BYTES:
+            continue
+        digest = hashlib.sha256()
+        try:
+            with open_workspace_file(record.relative_path) as stream:
+                file_stat = os.fstat(stream.fileno())
+                if file_stat.st_size > config.MAX_FILE_BYTES:
+                    continue
+                for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+                    digest.update(chunk)
+            groups.setdefault(digest.hexdigest(), []).append({
+                "path": record.relative_path,
+                "size_bytes": file_stat.st_size,
+            })
+            checked += 1
+        except (OSError, ValueError):
+            continue
+
+    duplicates = [
+        {"sha256": digest, "files": files, "count": len(files)}
+        for digest, files in groups.items()
+        if len(files) > 1
+    ]
+    return {
+        "groups": duplicates,
+        "duplicate_files": sum(group["count"] for group in duplicates),
+        "files_checked": checked,
+        "truncated": result["truncated"],
+        "message": "Exact byte-for-byte matches only. No files were removed or changed.",
+    }
