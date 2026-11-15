@@ -6,7 +6,7 @@ Laz Helper includes optional scheduled inbox reviews and local workspace summari
 
 Sloth Mode can review a designated folder on a configured interval. It is opt-in and disabled by default. A review summarizes files seen, items ready for review, uncertain items, and conflicts.
 
-Sloth Mode does not move or delete files automatically. The scheduler runs within the application process, so scheduled checks occur only while Laz Helper is running.
+Sloth Mode does not move or delete files automatically. The scheduler runs within each application process, so scheduled checks occur only while Laz Helper is running. On a multi-instance deployment, each instance may start its own scheduler; keep Sloth Mode disabled unless a single scheduler/leader is configured.
 
 ## Workspace insights
 
