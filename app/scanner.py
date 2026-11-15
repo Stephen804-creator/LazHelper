@@ -389,6 +389,7 @@ def scan_folder(relative_path="."):
                             f"{current_rel}/{entry.name}"
                             if current_rel else entry.name
                         )
+                        _validate_relative(child_rel)
                         if entry.is_dir(follow_symlinks=False):
                             if depth < config.MAX_DEPTH:
                                 stack.append((child_rel, depth + 1))
