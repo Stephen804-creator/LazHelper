@@ -204,8 +204,17 @@ def ensure_workspace_directory(relative_path):
     """Create missing workspace directories without traversing symlinks (POSIX)."""
     part = _validate_relative(relative_path)
     if os.name != "posix" or not hasattr(os, "O_NOFOLLOW") or not hasattr(os, "O_DIRECTORY"):
-        target = safe_workspace_path(relative_path)
-        target.mkdir(parents=True, exist_ok=True)
+        root = _root()
+        target = root
+        for name in part.parts:
+            if name in ("", "."):
+                continue
+            target = target / name
+            if target.is_symlink():
+                raise UnsafePath("Symlinks are not followed.")
+            if target.exists() and not target.is_dir():
+                raise UnsafePath("A workspace path component is not a directory.")
+            target.mkdir(exist_ok=True)
         return target
 
     root_fd = os.open(_root(), os.O_RDONLY | os.O_DIRECTORY)
