@@ -32,3 +32,5 @@ Organization rules and supported preferences are stored locally. Review the conf
 - Duplicate discovery is read-only.
 - The application does not provide a file-deletion operation.
 - All file operations must remain within the configured workspace.
+- Path inputs must be relative and cannot use parent traversal, drive prefixes, or backslash separators.
+- POSIX reads and moves use no-follow file handles and exclusive destination creation to reduce symlink and destination-race risks.
