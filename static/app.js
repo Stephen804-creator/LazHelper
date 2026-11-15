@@ -230,7 +230,14 @@ async function settings() {
       const rules = {};
       rows.querySelectorAll(".cat").forEach(r => { const n = r.querySelector(".cn").value.trim(), e = r.querySelector(".ce").value.split(/[,\s]+/).filter(Boolean); if (n) rules[n] = e; });
       try { S.prefs = await api("/api/preferences", { method: "PUT", body: { category_rules: rules, include_date_in_plan: date.classList.contains("on") } }); S.rules = JSON.parse(JSON.stringify(S.prefs.category_rules)); S.scanned = false; toast("Settings saved. Scan again to see new suggestions."); settings(); } catch (e) { toast(e.message); }
-    } }, "Save settings"));
+    } }, "Save settings"),
+    el("button", {
+      onclick: () => {
+        sessionStorage.removeItem(TOKEN_STORAGE_KEY);
+        apiToken = "";
+        showAuth("Laz Helper is locked.");
+      }
+    }, "Lock Laz Helper"));
 }
 
 function go(v) {
