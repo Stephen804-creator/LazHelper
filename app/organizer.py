@@ -155,18 +155,30 @@ def build_plan(relative_paths: list[str]):
 def apply_plan(items: list[dict[str, str]]):
     if not items or len(items) > 500:
         raise ValueError("Choose between 1 and 500 reviewed plan items.")
-    completed, failed = [], []
+
+    completed, failed, pending_recovery = [], [], []
+    files_changed = 0
     root = config.ALLOWED_ROOT.resolve()
+
     for item in items:
-        source_rel, dest_rel = item.get("source", ""), item.get("destination", "")
+        source_rel = item.get("source", "")
+        dest_rel = item.get("destination", "")
+        journal_id = None
+        moved = False
+
         if not source_rel or not dest_rel or item.get("approved") is not True:
-            failed.append({"source": source_rel, "reason": "Each move must be explicitly approved."}); continue
+            failed.append({
+                "source": source_rel,
+                "reason": "Each move must be explicitly approved."
+            })
+            continue
+
         try:
             source = safe_file_path(source_rel)
             dest_part = Path(dest_rel)
-            if dest_part.is_absolute() or ".." in dest_part.parts:
-                raise UnsafePath("Destination must be relative to workspace.")
-            # Restrict destination to clean path segments; no symlink traversal.
+            if dest_part.is_absolute() or ".." in dest_part.parts or "\\" in dest_rel:
+                raise UnsafePath("Destination must be a safe relative workspace path.")
+
             cursor = root
             for part in dest_part.parts:
                 if part in ("", ".") or any(c in part for c in '\\:<>|"?*'):
@@ -174,46 +186,145 @@ def apply_plan(items: list[dict[str, str]]):
                 cursor = cursor / part
                 if cursor.is_symlink():
                     raise UnsafePath("Destination traverses a symlink.")
+
             destination = (root / dest_part).resolve()
             destination.relative_to(root)
             if destination.exists():
                 raise FileExistsError("Destination already exists; refusing to overwrite.")
             if source == destination:
                 raise ValueError("Source and destination are identical.")
-            ensure_workspace_directory(dest_part.parent)
-            # Re-check source after directory creation and never overwrite a target.
-            if not source.exists() or destination.exists():
-                raise FileExistsError("Source changed or destination appeared during review.")
-            _move_no_overwrite(source, destination)
+
+            normalized_destination = destination.relative_to(root).as_posix()
+
+            # Persist intent before changing the filesystem. A crash during the move
+            # leaves a visible pending journal row instead of an untracked move.
             with _connect() as con:
-                cur = con.execute("INSERT INTO operation_journal(action,source_path,destination_path,status,created_at,detail) VALUES(?,?,?,?,?,?) RETURNING id",
-                                  ("move", source_rel, destination.relative_to(root).as_posix(), "applied", _now(), "User-approved move"))
-                inserted = cur.fetchone()
-                journal_id = inserted["id"]
-            completed.append({"id": journal_id, "source": source_rel, "destination": destination.relative_to(root).as_posix()})
+                cur = con.execute(
+                    "INSERT INTO operation_journal "
+                    "(action,source_path,destination_path,status,created_at,detail) "
+                    "VALUES(?,?,?,?,?,?) RETURNING id",
+                    (
+                        "move",
+                        source_rel,
+                        normalized_destination,
+                        "pending",
+                        _now(),
+                        "User-approved move; operation started."
+                    )
+                )
+                journal_id = cur.fetchone()["id"]
+
+            ensure_workspace_directory(dest_part.parent)
+            if not source.exists() or destination.exists():
+                raise FileExistsError(
+                    "Source changed or destination appeared during review."
+                )
+
+            _move_no_overwrite(source, destination)
+            moved = True
+            files_changed += 1
+
+            with _connect() as con:
+                con.execute(
+                    "UPDATE operation_journal SET status='applied', detail=? WHERE id=?",
+                    ("User-approved move completed.", journal_id)
+                )
+
+            completed.append({
+                "id": journal_id,
+                "source": source_rel,
+                "destination": normalized_destination
+            })
+
         except Exception as exc:
-            failed.append({"source": source_rel, "reason": str(exc)})
-    return {"completed": completed, "failed": failed, "files_changed": len(completed)}
+            if journal_id is not None and not moved:
+                try:
+                    with _connect() as con:
+                        con.execute(
+                            "UPDATE operation_journal SET status='failed', detail=? WHERE id=?",
+                            (str(exc)[:500], journal_id)
+                        )
+                except Exception:
+                    pass
+            if journal_id is not None and moved:
+                pending_recovery.append({
+                    "id": journal_id,
+                    "source": source_rel,
+                    "destination": dest_rel,
+                    "reason": (
+                        "The file move completed, but the journal could not be finalized. "
+                        "The operation remains marked pending for recovery."
+                    )
+                })
+            else:
+                failed.append({"source": source_rel, "reason": str(exc)})
+
+    return {
+        "completed": completed,
+        "failed": failed,
+        "pending_recovery": pending_recovery,
+        "files_changed": files_changed
+    }
+
+
 def undo_operation(operation_id: int):
     root = config.ALLOWED_ROOT.resolve()
+
     with _connect() as con:
-        row = con.execute("SELECT * FROM operation_journal WHERE id=?", (operation_id,)).fetchone()
-        if not row: raise ValueError("Operation was not found.")
+        row = con.execute(
+            "SELECT * FROM operation_journal WHERE id=?",
+            (operation_id,)
+        ).fetchone()
+        if not row:
+            raise ValueError("Operation was not found.")
         if row["status"] != "applied" or row["undone_at"]:
             raise ValueError("This operation is not available to undo.")
-        source_rel, dest_rel = row["source_path"], row["destination_path"]
+
+        source_rel = row["source_path"]
+        dest_rel = row["destination_path"]
         dest = safe_file_path(dest_rel)
         source_part = Path(source_rel)
-        if source_part.is_absolute() or ".." in source_part.parts:
+        if (
+            source_part.is_absolute()
+            or ".." in source_part.parts
+            or "\\" in source_rel
+        ):
             raise UnsafePath("Journal source path is invalid.")
-        source = (root / source_part).resolve()
-        source.relative_to(root)
-        if source.exists():
+        source = root / source_part
+        source.resolve().relative_to(root)
+        if source.exists() or source.is_symlink():
             raise FileExistsError("Original path now exists; undo will not overwrite it.")
+
+        # Record the intent and release the DB connection before moving the file.
+        con.execute(
+            "UPDATE operation_journal SET status='undoing', detail=? WHERE id=?",
+            ("Undo started.", operation_id)
+        )
+
+    try:
         ensure_workspace_directory(source_part.parent)
         _move_no_overwrite(dest, source)
-        con.execute("UPDATE operation_journal SET status='undone',undone_at=? WHERE id=?", (_now(), operation_id))
-    return {"id": operation_id, "restored_path": source_rel, "files_changed": 1}
+    except Exception:
+        with _connect() as con:
+            con.execute(
+                "UPDATE operation_journal SET status='applied', detail=? WHERE id=?",
+                ("Undo failed; original move remains applied.", operation_id)
+            )
+        raise
+
+    with _connect() as con:
+        con.execute(
+            "UPDATE operation_journal SET status='undone', undone_at=?, detail=? WHERE id=?",
+            (_now(), "Move successfully undone.", operation_id)
+        )
+
+    return {
+        "id": operation_id,
+        "restored_path": source_rel,
+        "files_changed": 1
+    }
+
+
 def list_journal(limit: int = 100):
     with _connect() as con:
         rows = con.execute("SELECT id,action,source_path,destination_path,status,created_at,undone_at,detail FROM operation_journal ORDER BY id DESC LIMIT ?", (max(1,min(limit,200)),)).fetchall()
