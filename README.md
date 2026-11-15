@@ -112,7 +112,9 @@ ollama pull gemma3:1b
 
 Set the model and Ollama endpoint in your `.env` configuration. For local development, Laz Helper stores preferences and operation history in SQLite. When `DATABASE_URL` is configured, it uses PostgreSQL for shared application state. Workspace files themselves remain on the filesystem of the backend host.
 
-The Render blueprint generates `LAZ_HELPER_API_TOKEN`; retrieve it from the service environment settings and enter it in the browser unlock screen. Keep it private and use HTTPS. Render's ordinary service filesystem is ephemeral unless persistent storage is separately configured, so do not treat a free Render workspace as durable storage for important personal files. Run Laz Helper locally when you need it to work directly with files on your own computer.
+The Render blueprint generates `LAZ_HELPER_API_TOKEN`; retrieve it from the service environment settings and enter it in the browser unlock screen. Keep it private and use HTTPS. The blueprint's default Ollama URL points to loopback inside the Render container, not to Ollama running on your computer. Configure `LAZ_HELPER_OLLAMA_URL` to a reachable Ollama-compatible endpoint if hosted AI recommendations are required; extracted file content will be sent to that endpoint.
+
+Render's ordinary service filesystem is ephemeral unless persistent storage is separately configured, so do not treat a free Render workspace as durable storage for important personal files. Run Laz Helper locally when you need it to work directly with files on your own computer.
 
 ## Run tests
 
