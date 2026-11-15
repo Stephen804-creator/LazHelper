@@ -103,3 +103,20 @@ details.opt summary{cursor:pointer;min-height:44px;display:flex;align-items:cent
  .stats{grid-template-columns:repeat(2,1fr)}
 }
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
+
+
+.auth-gate {
+  width: min(92vw, 440px);
+  margin: 12vh auto;
+  padding: 16px;
+}
+.auth-gate[hidden] { display: none; }
+.auth-gate form { display: grid; gap: 12px; }
+.auth-gate input {
+  width: 100%;
+  min-height: 46px;
+  border: 1px solid var(--line, #d8ded9);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font: inherit;
+}
