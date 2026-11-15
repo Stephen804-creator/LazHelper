@@ -57,6 +57,12 @@ def _move_no_overwrite(source: Path, destination: Path):
             with create_workspace_file(destination_rel) as dst:
                 created_stat = os.fstat(dst.fileno())
                 shutil.copyfileobj(src, dst, length=1024 * 1024)
+                after_copy = os.fstat(src.fileno())
+                if (
+                    source_stat.st_size != after_copy.st_size
+                    or source_stat.st_mtime_ns != after_copy.st_mtime_ns
+                ):
+                    raise ValueError("Source file changed while it was being moved.")
                 dst.flush()
                 os.fsync(dst.fileno())
                 if hasattr(os, "fchmod"):
