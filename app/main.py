@@ -1,10 +1,11 @@
 from contextlib import asynccontextmanager
 import asyncio
+import hmac
 from pathlib import Path
 import zipfile
 
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -40,6 +41,33 @@ app = FastAPI(
     lifespan=lifespan,
 )
 app.mount("/static", StaticFiles(directory=STATIC), name="static")
+
+
+@app.middleware("http")
+async def require_api_token(request: Request, call_next):
+    # Health checks stay public; every workspace/data endpoint requires a bearer token.
+    if request.url.path.startswith("/api/") and request.url.path != "/api/health":
+        expected = config.API_TOKEN
+        if not expected:
+            return JSONResponse(
+                status_code=503,
+                content={"detail": "API access is not configured. Set LAZ_HELPER_API_TOKEN."}
+            )
+
+        authorization = request.headers.get("authorization", "")
+        scheme, separator, supplied = authorization.partition(" ")
+        if (
+            not separator
+            or scheme.lower() != "bearer"
+            or not hmac.compare_digest(supplied, expected)
+        ):
+            return JSONResponse(
+                status_code=401,
+                content={"detail": "A valid Laz Helper access token is required."},
+                headers={"WWW-Authenticate": "Bearer"}
+            )
+
+    return await call_next(request)
 
 class PlanRequest(BaseModel):
     relative_paths: list[str] = Field(min_length=1, max_length=500)
