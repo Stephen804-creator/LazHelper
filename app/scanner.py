@@ -160,6 +160,20 @@ def open_workspace_directory(relative_path="."):
         os.close(fd)
 
 
+@contextmanager
+def scandir_workspace(relative_path="."):
+    if os.name == "posix" and hasattr(os, "O_NOFOLLOW") and hasattr(os, "O_DIRECTORY"):
+        with open_workspace_directory(relative_path) as directory_fd:
+            with os.scandir(directory_fd) as entries:
+                yield entries
+    else:
+        # Windows fallback: validate every path component and reject symlinks
+        # before scanning; file opens still use inode checks.
+        folder = safe_workspace_path(relative_path)
+        with os.scandir(folder) as entries:
+            yield entries
+
+
 def open_workspace_file(relative_path):
     """Open a regular workspace file without following symlinks.
 
@@ -351,59 +365,58 @@ def scan_folder(relative_path="."):
     while stack:
         current_rel, depth = stack.pop()
         try:
-            with open_workspace_directory(current_rel or ".") as directory_fd:
-                with os.scandir(directory_fd) as entries:
-                    for entry in entries:
-                        try:
-                            if entry.is_symlink():
-                                skipped += 1
-                                continue
-                            child_rel = (
-                                f"{current_rel}/{entry.name}"
-                                if current_rel else entry.name
-                            )
-                            if entry.is_dir(follow_symlinks=False):
-                                if depth < config.MAX_DEPTH:
-                                    stack.append((child_rel, depth + 1))
-                                else:
-                                    skipped += 1
-                                continue
-                            if not entry.is_file(follow_symlinks=False):
-                                skipped += 1
-                                continue
-
-                            info = entry.stat(follow_symlinks=False)
-                            if not stat.S_ISREG(info.st_mode):
-                                skipped += 1
-                                continue
-                            ext = Path(entry.name).suffix.lower()
-                            found.append(FileRecord(
-                                relative_path=child_rel,
-                                name=entry.name,
-                                extension=ext,
-                                size_bytes=info.st_size,
-                                modified_at=datetime.fromtimestamp(
-                                    info.st_mtime, timezone.utc
-                                ).isoformat(),
-                                detected_type=SUPPORTED.get(
-                                    ext, "Unsupported or unknown file type"
-                                ),
-                                readable=(
-                                    ext in SUPPORTED
-                                    and info.st_size <= config.MAX_FILE_BYTES
-                                ),
-                                note=(
-                                    "File exceeds configured size limit"
-                                    if info.st_size > config.MAX_FILE_BYTES
-                                    else None
-                                ),
-                            ))
-                            if len(found) >= config.MAX_FILES:
-                                truncated = True
-                                stack.clear()
-                                break
-                        except (OSError, ValueError):
+            with scandir_workspace(current_rel or ".") as entries:
+                for entry in entries:
+                    try:
+                        if entry.is_symlink():
                             skipped += 1
+                            continue
+                        child_rel = (
+                            f"{current_rel}/{entry.name}"
+                            if current_rel else entry.name
+                        )
+                        if entry.is_dir(follow_symlinks=False):
+                            if depth < config.MAX_DEPTH:
+                                stack.append((child_rel, depth + 1))
+                            else:
+                                skipped += 1
+                            continue
+                        if not entry.is_file(follow_symlinks=False):
+                            skipped += 1
+                            continue
+
+                        info = entry.stat(follow_symlinks=False)
+                        if not stat.S_ISREG(info.st_mode):
+                            skipped += 1
+                            continue
+                        ext = Path(entry.name).suffix.lower()
+                        found.append(FileRecord(
+                            relative_path=child_rel,
+                            name=entry.name,
+                            extension=ext,
+                            size_bytes=info.st_size,
+                            modified_at=datetime.fromtimestamp(
+                                info.st_mtime, timezone.utc
+                            ).isoformat(),
+                            detected_type=SUPPORTED.get(
+                                ext, "Unsupported or unknown file type"
+                            ),
+                            readable=(
+                                ext in SUPPORTED
+                                and info.st_size <= config.MAX_FILE_BYTES
+                            ),
+                            note=(
+                                "File exceeds configured size limit"
+                                if info.st_size > config.MAX_FILE_BYTES
+                                else None
+                            ),
+                        ))
+                        if len(found) >= config.MAX_FILES:
+                            truncated = True
+                            stack.clear()
+                            break
+                    except (OSError, ValueError):
+                        skipped += 1
         except (OSError, UnsafePath):
             skipped += 1
 
