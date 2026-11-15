@@ -373,6 +373,9 @@ def scan_folder(relative_path="."):
                                 continue
 
                             info = entry.stat(follow_symlinks=False)
+                            if not stat.S_ISREG(info.st_mode):
+                                skipped += 1
+                                continue
                             ext = Path(entry.name).suffix.lower()
                             found.append(FileRecord(
                                 relative_path=child_rel,
