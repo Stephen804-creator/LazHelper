@@ -12,7 +12,14 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 from . import config, database
-from .scanner import safe_file_path, UnsafePath
+from .scanner import (
+    safe_file_path,
+    open_workspace_file,
+    create_workspace_file,
+    ensure_workspace_directory,
+    unlink_workspace_file,
+    UnsafePath,
+)
 
 DB_PATH = config.PROJECT_ROOT / ".lazydesk_state.sqlite3"
 
@@ -35,30 +42,40 @@ def _now():
     return datetime.now(timezone.utc).isoformat()
 
 def _move_no_overwrite(source: Path, destination: Path):
-    """Copy into an exclusively-created destination, then unlink source.
+    """Move one regular file using no-follow handles and exclusive creation."""
+    root = config.ALLOWED_ROOT.resolve()
+    source_rel = source.relative_to(root).as_posix()
+    destination_rel = destination.relative_to(root).as_posix()
+    source_stat = None
+    created_stat = None
 
-    Unlike os.replace(), opening with mode 'xb' never overwrites a path that
-    appeared after the preview. If copying fails, remove the partial destination.
-    """
-    created = False
     try:
-        with source.open("rb") as src, destination.open("xb") as dst:
-            created = True
-            shutil.copyfileobj(src, dst, length=1024 * 1024)
-            dst.flush()
-            os.fsync(dst.fileno())
-        try:
-            shutil.copystat(source, destination, follow_symlinks=False)
-        except OSError:
-            pass
-        source.unlink()
+        with open_workspace_file(source_rel) as src:
+            source_stat = os.fstat(src.fileno())
+            ensure_workspace_directory(Path(destination_rel).parent)
+
+            with create_workspace_file(destination_rel) as dst:
+                created_stat = os.fstat(dst.fileno())
+                shutil.copyfileobj(src, dst, length=1024 * 1024)
+                dst.flush()
+                os.fsync(dst.fileno())
+                os.fchmod(dst.fileno(), source_stat.st_mode & 0o777)
+                os.utime(
+                    dst.fileno(),
+                    ns=(source_stat.st_atime_ns, source_stat.st_mtime_ns)
+                )
+                created_stat = os.fstat(dst.fileno())
+
+            unlink_workspace_file(source_rel, source_stat)
+
     except Exception:
-        if created and source.exists():
+        if created_stat is not None:
             try:
-                destination.unlink(missing_ok=True)
-            except OSError:
+                unlink_workspace_file(destination_rel, created_stat)
+            except (OSError, ValueError):
                 pass
         raise
+
 def get_preferences():
     with _connect() as con:
         rows = {r["key"]: json.loads(r["value"]) for r in con.execute("SELECT key,value FROM preferences")}
@@ -161,7 +178,7 @@ def apply_plan(items: list[dict[str, str]]):
                 raise FileExistsError("Destination already exists; refusing to overwrite.")
             if source == destination:
                 raise ValueError("Source and destination are identical.")
-            destination.parent.mkdir(parents=True, exist_ok=True)
+            ensure_workspace_directory(dest_part.parent)
             # Re-check source after directory creation and never overwrite a target.
             if not source.exists() or destination.exists():
                 raise FileExistsError("Source changed or destination appeared during review.")
@@ -191,7 +208,7 @@ def undo_operation(operation_id: int):
         source.relative_to(root)
         if source.exists():
             raise FileExistsError("Original path now exists; undo will not overwrite it.")
-        source.parent.mkdir(parents=True, exist_ok=True)
+        ensure_workspace_directory(source_part.parent)
         _move_no_overwrite(dest, source)
         con.execute("UPDATE operation_journal SET status='undone',undone_at=? WHERE id=?", (_now(), operation_id))
     return {"id": operation_id, "restored_path": source_rel, "files_changed": 1}
@@ -223,12 +240,16 @@ def find_duplicates(relative_path: str = "."):
             path = Path(current) / name
             try:
                 if path.is_symlink() or not path.is_file() or path.stat().st_size > config.MAX_FILE_BYTES: continue
+                rel = path.relative_to(config.ALLOWED_ROOT.resolve()).as_posix()
                 digest = hashlib.sha256()
-                with path.open("rb") as stream:
+                with open_workspace_file(rel) as stream:
+                    file_stat = os.fstat(stream.fileno())
                     for chunk in iter(lambda: stream.read(1024 * 1024), b""):
                         digest.update(chunk)
-                rel = path.relative_to(config.ALLOWED_ROOT.resolve()).as_posix()
-                groups.setdefault(digest.hexdigest(), []).append({"path": rel, "size_bytes": path.stat().st_size})
+                groups.setdefault(digest.hexdigest(), []).append({
+                    "path": rel,
+                    "size_bytes": file_stat.st_size
+                })
                 checked += 1
                 if checked >= config.MAX_FILES: break
             except OSError:
