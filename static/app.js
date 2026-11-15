@@ -285,7 +285,7 @@ $("#authForm").addEventListener("submit", async event => {
   } catch (error) {
     apiToken = "";
     showAuth(
-      error.message.includes("not configured")
+      error.message.includes("LAZ_HELPER_API_TOKEN")
         ? "The server has no access token configured. Set LAZ_HELPER_API_TOKEN first."
         : "That access token was not accepted. Check it and try again."
     );
