@@ -59,11 +59,13 @@ def _move_no_overwrite(source: Path, destination: Path):
                 shutil.copyfileobj(src, dst, length=1024 * 1024)
                 dst.flush()
                 os.fsync(dst.fileno())
-                os.fchmod(dst.fileno(), source_stat.st_mode & 0o777)
-                os.utime(
-                    dst.fileno(),
-                    ns=(source_stat.st_atime_ns, source_stat.st_mtime_ns)
-                )
+                if hasattr(os, "fchmod"):
+                    os.fchmod(dst.fileno(), source_stat.st_mode & 0o777)
+                if os.name == "posix":
+                    os.utime(
+                        dst.fileno(),
+                        ns=(source_stat.st_atime_ns, source_stat.st_mtime_ns)
+                    )
                 created_stat = os.fstat(dst.fileno())
 
             unlink_workspace_file(source_rel, source_stat)
