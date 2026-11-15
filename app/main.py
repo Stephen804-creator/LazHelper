@@ -59,7 +59,10 @@ async def require_api_token(request: Request, call_next):
         if (
             not separator
             or scheme.lower() != "bearer"
-            or not hmac.compare_digest(supplied, expected)
+            or not hmac.compare_digest(
+                supplied.encode("utf-8"),
+                expected.encode("utf-8")
+            )
         ):
             return JSONResponse(
                 status_code=401,
