@@ -22,7 +22,14 @@ def test_windows_and_backslash_paths_are_rejected(tmp_path, monkeypatch):
     root.mkdir()
     monkeypatch.setattr(config, "ALLOWED_ROOT", root)
 
-    for value in (r"..\outside", r"folder\..\secret.txt", "C:/Windows/win.ini", r"C:\temp\file.txt"):
+    for value in (
+        r"..\outside",
+        r"folder\..\secret.txt",
+        "C:/Windows/win.ini",
+        r"C:\temp\file.txt",
+        "folder/report.txt:secret",
+        "NUL.txt",
+    ):
         with pytest.raises(UnsafePath):
             safe_workspace_path(value)
 
