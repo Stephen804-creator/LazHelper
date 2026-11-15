@@ -141,7 +141,13 @@ async function applyMoves() {
     S.plan = S.plan.filter(x => !done.has(x.source));
     done.forEach(d => S.sel.delete(d));
     S.journal = null;
-    toast(r.completed.length + (r.completed.length === 1 ? " file moved. " : " files moved. ") + "Nothing was deleted." + (r.failed.length ? " " + r.failed.length + " couldn't be moved: " + r.failed[0].reason : ""));
+    const pending = r.pending_recovery || [];
+    toast(
+      r.completed.length + (r.completed.length === 1 ? " file moved. " : " files moved. ") +
+      "Nothing was deleted." +
+      (r.failed.length ? " " + r.failed.length + " couldn't be moved: " + r.failed[0].reason : "") +
+      (pending.length ? " " + pending.length + " move(s) need journal recovery; check History." : "")
+    );
   } catch (e) { toast(e.message); }
   review();
 }
@@ -211,7 +217,11 @@ async function history() {
   if (!S.journal.length) out.push(el("section", { class: "card empty" }, el("h2", {}, "No moves yet"), el("p", { class: "mute" }, "Approved moves will appear here so you can undo them.")));
   S.journal.forEach(o => out.push(el("section", { class: "card" }, el("div", { class: "between" },
     el("div", { style: "min-width:0" }, el("b", { class: "nm", style: "display:block" }, base(o.source_path)), el("p", { class: "mute small" }, (o.status === "undone" ? "Restored" : "Moved") + " · " + dir(o.destination_path || "") + " · " + when(o.undone_at || o.created_at))),
-    o.status === "applied" ? el("button", { style: "flex:none", onclick: async () => { try { await api("/api/journal/" + o.id + "/undo", { method: "POST" }); toast("Put back where it was."); S.journal = null; S.scanned = false; history(); } catch (e) { toast(e.message); } } }, "Undo") : el("span", { class: "badge" }, "Restored")))));
+    o.status === "applied"
+      ? el("button", { style: "flex:none", onclick: async () => { try { await api("/api/journal/" + o.id + "/undo", { method: "POST" }); toast("Put back where it was."); S.journal = null; S.scanned = false; history(); } catch (e) { toast(e.message); } } }, "Undo")
+      : el("span", { class: "badge" },
+          o.status === "undone" ? "Restored" :
+          (o.status === "pending" || o.status === "undoing") ? "Needs recovery" : "Not completed")))));
   v.replaceChildren(...out);
 }
 
