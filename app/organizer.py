@@ -74,7 +74,8 @@ def _move_no_overwrite(source: Path, destination: Path):
                     )
                 created_stat = os.fstat(dst.fileno())
 
-            unlink_workspace_file(source_rel, source_stat)
+        # Windows does not allow unlinking a file while its source handle is open.
+        unlink_workspace_file(source_rel, source_stat)
 
     except Exception:
         if created_stat is not None:
