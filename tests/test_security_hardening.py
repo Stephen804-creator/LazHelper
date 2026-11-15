@@ -108,3 +108,16 @@ def test_workspace_api_requires_bearer_token(monkeypatch):
             headers={"Authorization": "Bearer " + "a" * 40}
         )
         assert response.status_code == 200
+
+
+
+def test_workspace_api_fails_closed_without_a_configured_token(monkeypatch):
+    from fastapi.testclient import TestClient
+    from app.main import app
+
+    monkeypatch.setattr(config, "API_TOKEN", "")
+    with TestClient(app) as client:
+        assert client.get("/api/health").status_code == 200
+        response = client.get("/api/config")
+        assert response.status_code == 503
+        assert "LAZ_HELPER_API_TOKEN" in response.json()["detail"]
