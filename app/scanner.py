@@ -252,6 +252,10 @@ def ensure_workspace_directory(relative_path):
                     if error.errno == errno.ELOOP:
                         raise UnsafePath("Symlinks are not followed.") from error
                     raise
+            except OSError as error:
+                if error.errno == errno.ELOOP:
+                    raise UnsafePath("Symlinks are not followed.") from error
+                raise
             if current_fd != root_fd:
                 os.close(current_fd)
             current_fd = next_fd
