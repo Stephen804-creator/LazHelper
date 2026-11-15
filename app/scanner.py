@@ -131,6 +131,11 @@ def _open_directory_fd(relative_path="."):
                 os.close(current_fd)
             current_fd = next_fd
         result = current_fd
+        if result == root_fd:
+            root_fd = -1
+        else:
+            os.close(root_fd)
+            root_fd = -1
         current_fd = -1
         return result
     finally:
