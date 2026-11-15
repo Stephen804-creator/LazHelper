@@ -78,3 +78,20 @@ def test_journal_intent_is_written_before_a_file_is_moved(workspace, monkeypatch
     assert result["failed"]
     assert (workspace / "incoming" / "report.txt").exists()
     assert not (workspace / "Documents" / "report.txt").exists()
+
+
+
+def test_apply_refuses_to_overwrite_a_destination_created_after_preview(workspace):
+    destination = workspace / "Documents" / "report.txt"
+    destination.parent.mkdir()
+    destination.write_text("keep this file", encoding="utf-8")
+
+    result = organizer.apply_plan([{
+        "source": "incoming/report.txt",
+        "destination": "Documents/report.txt",
+        "approved": True
+    }])
+
+    assert result["files_changed"] == 0
+    assert (workspace / "incoming" / "report.txt").read_text(encoding="utf-8") == "quarterly report"
+    assert destination.read_text(encoding="utf-8") == "keep this file"
