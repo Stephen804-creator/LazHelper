@@ -15,6 +15,7 @@ Laz Helper protects a configured workspace and requires explicit approval before
 - Configure the workspace folder that the backend is allowed to inspect.
 - API paths must be relative and cannot contain parent-directory traversal, drive prefixes, or backslash path separators.
 - POSIX file opens walk directory descriptors and refuse symbolic links; file reads use no-follow handles.
+- On platforms without POSIX directory-descriptor support, path resolution and before/after inode checks are used as a compatibility fallback; the POSIX path has stronger race resistance.
 - Scanning does not follow symbolic links and is bounded by scan depth, file count, and file size.
 - Extraction is bounded by file size, text length, page/slide/sheet previews, image dimensions, and archive entry/expansion limits.
 - Scanning and extraction do not change file contents or locations.
