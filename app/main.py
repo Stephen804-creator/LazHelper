@@ -132,7 +132,7 @@ async def analyze(req: AnalyzeRequest):
         raise HTTPException(422, str(exc)) from exc
     rec = None
     ai_status = "unavailable"
-    message = "Content extracted. Start Ollama and pull the configured model for an AI recommendation."
+    message = "Content extracted. Check the configured Ollama-compatible endpoint and model if you want an AI recommendation."
     try:
         rec = await recommend(path.name, extracted["text"], extracted["details"])
         ai_status, message = "ready", "Recommendation generated. Review it before taking action."
