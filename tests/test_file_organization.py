@@ -28,7 +28,7 @@ def test_apply_requires_explicit_approval(workspace):
 
 def test_apply_and_undo_are_journalled(workspace):
     result = organizer.apply_plan([{"source":"incoming/report.txt","destination":"Documents/report.txt","approved":True}])
-    assert result["files_changed"] == 1
+    assert result["files_changed"] == 1, result
     assert (workspace / "Documents" / "report.txt").read_text(encoding="utf-8") == "quarterly report"
     operation_id = result["completed"][0]["id"]
     undone = organizer.undo_operation(operation_id)
