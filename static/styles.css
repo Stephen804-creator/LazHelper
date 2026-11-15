@@ -120,3 +120,5 @@ details.opt summary{cursor:pointer;min-height:44px;display:flex;align-items:cent
   padding: 10px 12px;
   font: inherit;
 }
+
+.shell[hidden] { display: none !important; }
