@@ -48,10 +48,10 @@ async def require_api_token(request: Request, call_next):
     # Health checks stay public; every workspace/data endpoint requires a bearer token.
     if request.url.path.startswith("/api/") and request.url.path != "/api/health":
         expected = config.API_TOKEN
-        if not expected:
+        if len(expected) < 32:
             return JSONResponse(
                 status_code=503,
-                content={"detail": "API access is not configured. Set LAZ_HELPER_API_TOKEN."}
+                content={"detail": "Set LAZ_HELPER_API_TOKEN to a random value of at least 32 characters."}
             )
 
         authorization = request.headers.get("authorization", "")
