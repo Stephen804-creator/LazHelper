@@ -33,4 +33,4 @@ Laz Helper keeps users in control of file changes. Scanning and analysis leave f
 
 ## Operating model
 
-Laz Helper is a local-first application built with FastAPI and a browser interface. File-operation history and preferences use SQLite. AI-assisted recommendations use the configured Ollama service, and workspace insights are generated from file metadata.
+Laz Helper can run locally or as a hosted service. It only inspects the workspace configured on the backend host: a local run can use a local folder, while a hosted run uses the server's workspace and cannot access a visitor's device files. Workspace API routes require a bearer token. Application state uses SQLite by default and PostgreSQL when `DATABASE_URL` is configured. AI-assisted recommendations send extracted content to the configured Ollama-compatible endpoint; workspace insights are generated from file metadata.
