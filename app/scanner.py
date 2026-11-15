@@ -200,6 +200,108 @@ def open_workspace_file(relative_path):
         raise
 
 
+def ensure_workspace_directory(relative_path):
+    """Create missing workspace directories without traversing symlinks (POSIX)."""
+    part = _validate_relative(relative_path)
+    if os.name != "posix" or not hasattr(os, "O_NOFOLLOW") or not hasattr(os, "O_DIRECTORY"):
+        target = safe_workspace_path(relative_path)
+        target.mkdir(parents=True, exist_ok=True)
+        return target
+
+    root_fd = os.open(_root(), os.O_RDONLY | os.O_DIRECTORY)
+    current_fd = root_fd
+    try:
+        for name in part.parts:
+            if name in ("", "."):
+                continue
+            try:
+                next_fd = os.open(
+                    name,
+                    os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW,
+                    dir_fd=current_fd,
+                )
+            except FileNotFoundError:
+                os.mkdir(name, mode=0o700, dir_fd=current_fd)
+                next_fd = os.open(
+                    name,
+                    os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW,
+                    dir_fd=current_fd,
+                )
+            if current_fd != root_fd:
+                os.close(current_fd)
+            current_fd = next_fd
+        if current_fd != root_fd:
+            os.close(current_fd)
+            current_fd = root_fd
+        return _root() / part
+    finally:
+        if current_fd >= 0 and current_fd != root_fd:
+            os.close(current_fd)
+        os.close(root_fd)
+
+
+@contextmanager
+def create_workspace_file(relative_path):
+    """Create a new file exclusively inside the workspace; never follow a link."""
+    part = _validate_relative(relative_path)
+    if not part.parts or str(part) == ".":
+        raise UnsafePath("A destination file name is required.")
+    parent = Path(*part.parts[:-1]) if len(part.parts) > 1 else Path(".")
+    if os.name == "posix" and hasattr(os, "O_NOFOLLOW") and hasattr(os, "O_DIRECTORY"):
+        parent_fd = _open_directory_fd(parent)
+        try:
+            fd = os.open(
+                part.parts[-1],
+                os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW,
+                0o600,
+                dir_fd=parent_fd,
+            )
+        finally:
+            os.close(parent_fd)
+        with os.fdopen(fd, "wb") as stream:
+            yield stream
+    else:
+        target = _root() / part
+        if target.exists() or target.is_symlink():
+            raise FileExistsError("Destination already exists.")
+        with target.open("xb") as stream:
+            yield stream
+
+
+def unlink_workspace_file(relative_path, expected_stat):
+    """Unlink only the same regular file that was opened earlier."""
+    part = _validate_relative(relative_path)
+    if not part.parts or str(part) == ".":
+        raise UnsafePath("A file path is required.")
+    parent = Path(*part.parts[:-1]) if len(part.parts) > 1 else Path(".")
+    if os.name == "posix" and hasattr(os, "O_NOFOLLOW") and hasattr(os, "O_DIRECTORY"):
+        parent_fd = _open_directory_fd(parent)
+        try:
+            current = os.stat(
+                part.parts[-1],
+                dir_fd=parent_fd,
+                follow_symlinks=False,
+            )
+            if (
+                not stat.S_ISREG(current.st_mode)
+                or current.st_dev != expected_stat.st_dev
+                or current.st_ino != expected_stat.st_ino
+            ):
+                raise UnsafePath("File changed before it could be moved.")
+            os.unlink(part.parts[-1], dir_fd=parent_fd)
+        finally:
+            os.close(parent_fd)
+    else:
+        target = safe_file_path(relative_path)
+        current = target.lstat()
+        if (
+            current.st_dev != expected_stat.st_dev
+            or current.st_ino != expected_stat.st_ino
+        ):
+            raise UnsafePath("File changed before it could be moved.")
+        target.unlink()
+
+
 def scan_folder(relative_path="."):
     folder = safe_workspace_path(relative_path)
     base = _root()
