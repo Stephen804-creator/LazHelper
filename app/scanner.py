@@ -204,7 +204,7 @@ def open_workspace_file(relative_path):
             try:
                 fd = os.open(
                     part.parts[-1],
-                    os.O_RDONLY | os.O_NOFOLLOW,
+                    os.O_RDONLY | os.O_NOFOLLOW | getattr(os, "O_NONBLOCK", 0),
                     dir_fd=parent_fd,
                 )
             except OSError as error:
