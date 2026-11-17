@@ -116,6 +116,9 @@ def test_workspace_api_requires_bearer_token(monkeypatch):
         )
         assert response.status_code == 200
         assert response.headers["cache-control"] == "no-store"
+        assert response.headers["x-content-type-options"] == "nosniff"
+        assert response.headers["x-frame-options"] == "DENY"
+        assert "frame-ancestors 'none'" in response.headers["content-security-policy"]
 
 
 
