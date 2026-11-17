@@ -83,6 +83,14 @@ async def require_api_token(request: Request, call_next):
         # browsers or shared intermediaries.
         response.headers["Cache-Control"] = "no-store"
         response.headers["Pragma"] = "no-cache"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; base-uri 'self'; form-action 'self'; "
+        "frame-ancestors 'none'; object-src 'none'; script-src 'self'; "
+        "style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'"
+    )
     return response
 
 class PlanRequest(BaseModel):
