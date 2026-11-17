@@ -28,7 +28,7 @@ def test_apply_requires_explicit_approval(workspace):
 
 def test_apply_and_undo_are_journalled(workspace):
     result = organizer.apply_plan([{"source":"incoming/report.txt","destination":"Documents/report.txt","approved":True}])
-    assert result["files_changed"] == 1
+    assert result["files_changed"] == 1, result
     assert (workspace / "Documents" / "report.txt").read_text(encoding="utf-8") == "quarterly report"
     operation_id = result["completed"][0]["id"]
     undone = organizer.undo_operation(operation_id)
@@ -52,3 +52,46 @@ def test_unknown_extension_goes_to_review_queue(workspace):
     result = organizer.build_plan(["incoming/mystery.bin"])
     assert result["plan"][0]["status"] == "needs_review"
     assert any(item["path"] == "incoming/mystery.bin" for item in organizer.list_queue())
+
+
+
+def test_journal_intent_is_written_before_a_file_is_moved(workspace, monkeypatch):
+    class FailingJournal:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, traceback):
+            return False
+
+        def execute(self, *args, **kwargs):
+            raise RuntimeError("journal unavailable")
+
+    monkeypatch.setattr(organizer, "_connect", lambda: FailingJournal())
+
+    result = organizer.apply_plan([{
+        "source": "incoming/report.txt",
+        "destination": "Documents/report.txt",
+        "approved": True
+    }])
+
+    assert result["files_changed"] == 0
+    assert result["failed"]
+    assert (workspace / "incoming" / "report.txt").exists()
+    assert not (workspace / "Documents" / "report.txt").exists()
+
+
+
+def test_apply_refuses_to_overwrite_a_destination_created_after_preview(workspace):
+    destination = workspace / "Documents" / "report.txt"
+    destination.parent.mkdir()
+    destination.write_text("keep this file", encoding="utf-8")
+
+    result = organizer.apply_plan([{
+        "source": "incoming/report.txt",
+        "destination": "Documents/report.txt",
+        "approved": True
+    }])
+
+    assert result["files_changed"] == 0
+    assert (workspace / "incoming" / "report.txt").read_text(encoding="utf-8") == "quarterly report"
+    assert destination.read_text(encoding="utf-8") == "keep this file"

@@ -34,7 +34,11 @@ class ConnectionAdapter:
         return self
 
     def __exit__(self, exc_type, exc, traceback):
-        return self.connection.__exit__(exc_type, exc, traceback)
+        try:
+            return self.connection.__exit__(exc_type, exc, traceback)
+        finally:
+            # sqlite3's context manager commits/rolls back but does not close.
+            self.connection.close()
 
 
 def connect(sqlite_path: Path | None = None) -> ConnectionAdapter:
@@ -77,8 +81,10 @@ def connect(sqlite_path: Path | None = None) -> ConnectionAdapter:
 
     path = sqlite_path or DB_PATH
     path.parent.mkdir(parents=True, exist_ok=True)
-    raw = sqlite3.connect(path, timeout=10)
+    raw = sqlite3.connect(path, timeout=30)
     raw.row_factory = sqlite3.Row
+    raw.execute("PRAGMA busy_timeout=30000")
+    raw.execute("PRAGMA foreign_keys=ON")
     raw.execute("PRAGMA journal_mode=WAL")
     con = ConnectionAdapter(raw, postgres=False)
     con.execute("""CREATE TABLE IF NOT EXISTS operation_journal (

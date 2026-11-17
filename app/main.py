@@ -1,10 +1,11 @@
 from contextlib import asynccontextmanager
 import asyncio
+import hmac
 from pathlib import Path
 import zipfile
 
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -40,6 +41,57 @@ app = FastAPI(
     lifespan=lifespan,
 )
 app.mount("/static", StaticFiles(directory=STATIC), name="static")
+
+
+@app.middleware("http")
+async def require_api_token(request: Request, call_next):
+    # Health checks stay public; every workspace/data endpoint requires a bearer token.
+    if request.url.path.startswith("/api/") and request.url.path != "/api/health":
+        expected = config.API_TOKEN
+        if (
+            len(expected) < 32
+            or expected.lower() in {
+                "replace-with-a-long-random-token",
+                "change-me",
+                "changeme"
+            }
+        ):
+            return JSONResponse(
+                status_code=503,
+                content={"detail": "Set LAZ_HELPER_API_TOKEN to a random value of at least 32 characters."}
+            )
+
+        authorization = request.headers.get("authorization", "")
+        scheme, separator, supplied = authorization.partition(" ")
+        if (
+            not separator
+            or scheme.lower() != "bearer"
+            or not hmac.compare_digest(
+                supplied.encode("utf-8"),
+                expected.encode("utf-8")
+            )
+        ):
+            return JSONResponse(
+                status_code=401,
+                content={"detail": "A valid Laz Helper access token is required."},
+                headers={"WWW-Authenticate": "Bearer"}
+            )
+
+    response = await call_next(request)
+    if request.url.path.startswith("/api/"):
+        # Workspace metadata and extracted document text must not be cached by
+        # browsers or shared intermediaries.
+        response.headers["Cache-Control"] = "no-store"
+        response.headers["Pragma"] = "no-cache"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; base-uri 'self'; form-action 'self'; "
+        "frame-ancestors 'none'; object-src 'none'; script-src 'self'; "
+        "style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'"
+    )
+    return response
 
 class PlanRequest(BaseModel):
     relative_paths: list[str] = Field(min_length=1, max_length=500)
@@ -101,7 +153,7 @@ async def analyze(req: AnalyzeRequest):
         raise HTTPException(422, str(exc)) from exc
     rec = None
     ai_status = "unavailable"
-    message = "Content extracted. Start Ollama and pull the configured model for an AI recommendation."
+    message = "Content extracted. Check the configured Ollama-compatible endpoint and model if you want an AI recommendation."
     try:
         rec = await recommend(path.name, extracted["text"], extracted["details"])
         ai_status, message = "ready", "Recommendation generated. Review it before taking action."

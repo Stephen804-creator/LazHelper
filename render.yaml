@@ -31,6 +31,8 @@ services:
         fromDatabase:
           name: laz-helper-db
           property: connectionString
+      - key: LAZ_HELPER_API_TOKEN
+        generateValue: true
 
 databases:
   - name: laz-helper-db

@@ -4,6 +4,8 @@
 
 Laz Helper helps you make sense of busy folders, understand documents, and organise files with less manual effort. Its review-first workflow brings file scanning, document understanding, AI-assisted recommendations, duplicate discovery, and workspace insights together in one straightforward interface.
 
+**Workspace boundary:** Laz Helper can only inspect files in the folder configured on the machine or server running the backend. Running it locally gives it access to your configured local folder. A Render deployment accesses the server's workspace, not files on your phone or computer.
+
 **Scan → Understand → Review → Organise**
 
 ## What you can do
@@ -16,6 +18,7 @@ Laz Helper helps you make sense of busy folders, understand documents, and organ
 
 ### Get AI-assisted recommendations
 - Use an Ollama-compatible model to generate file descriptions, summaries, and organization suggestions.
+- Extracted document content is sent to the configured `LAZ_HELPER_OLLAMA_URL` when an AI recommendation is requested. This may be a local or remote endpoint.
 - Review recommendations and proposed names before applying file changes.
 - Keep document processing and organization decisions transparent and under your control.
 
@@ -52,6 +55,7 @@ The [documentation index](docs/README.md) provides guides to the product, archit
 - FastAPI and Pydantic
 - Ollama-compatible AI models
 - SQLite for local development and PostgreSQL for deployments configured with `DATABASE_URL`
+- Bearer-token protection for workspace API routes
 - Pytest for automated tests
 
 Laz Helper's AI integration is designed to work with Ollama-compatible models, including open-weight models such as Gemma. Choose a model that suits your device and intended workload.
@@ -86,23 +90,31 @@ Install dependencies:
 python -m pip install -r requirements.txt
 ```
 
-Copy `.env.example` to `.env`, review the workspace settings, and start Laz Helper:
+Copy `.env.example` to `.env`, set `LAZ_HELPER_API_TOKEN` to a random value of at least 32 characters, review the workspace settings, and start Laz Helper:
 
 ```bash
 uvicorn app.main:app --reload
 ```
 
-Open http://127.0.0.1:8000 in your browser.
+Open http://127.0.0.1:8000 in your browser and enter the access token when prompted. Generate one with:
+
+```bash
+python -c "import secrets; print(secrets.token_urlsafe(32))"
+```
 
 ## AI-assisted recommendations
 
-Laz Helper uses Ollama for AI-assisted file descriptions, summaries, and organization suggestions. Install and start Ollama, then download a model suited to your device. For example:
+Laz Helper sends extracted content to the configured Ollama-compatible endpoint for AI-assisted file descriptions, summaries, and organization suggestions. When the endpoint is local, content is processed by your local Ollama service. If you configure a remote endpoint, the extracted content leaves the machine running Laz Helper and is sent to that remote service. Install and start Ollama locally, then download a model suited to your device. For example:
 
 ```bash
 ollama pull gemma3:1b
 ```
 
-Set the model and Ollama endpoint in your `.env` configuration. For local development, Laz Helper stores preferences and operation history in SQLite. When `DATABASE_URL` is configured, it uses PostgreSQL for shared application state. File scanning, supported document extraction, organization previews, and workspace insights are available through the application workflow.
+Set the model and Ollama endpoint in your `.env` configuration. For local development, Laz Helper stores preferences and operation history in SQLite. When `DATABASE_URL` is configured, it uses PostgreSQL for shared application state. Workspace files themselves remain on the filesystem of the backend host.
+
+The Render blueprint generates `LAZ_HELPER_API_TOKEN`; retrieve it from the service environment settings and enter it in the browser unlock screen. Keep it private and use HTTPS. The blueprint's default Ollama URL points to loopback inside the Render container, not to Ollama running on your computer. Configure `LAZ_HELPER_OLLAMA_URL` to a reachable Ollama-compatible endpoint if hosted AI recommendations are required; extracted file content will be sent to that endpoint.
+
+Render's ordinary service filesystem is ephemeral unless persistent storage is separately configured, so do not treat a free Render workspace as durable storage for important personal files. Run Laz Helper locally when you need it to work directly with files on your own computer.
 
 ## Run tests
 

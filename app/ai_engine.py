@@ -1,4 +1,4 @@
-"""Optional local Ollama adapter; output is untrusted advice."""
+"""Optional Ollama-compatible endpoint adapter; output is untrusted advice."""
 import re
 from pathlib import Path
 import httpx
@@ -24,9 +24,9 @@ async def recommend(original_name,text,details):
   async with httpx.AsyncClient(timeout=config.AI_TIMEOUT_SECONDS) as client:
    response=await client.post(f"{config.OLLAMA_URL}/api/chat",json=payload); response.raise_for_status()
    raw=response.json().get("message",{}).get("content","")
- except (httpx.HTTPError,ValueError) as exc: raise AIUnavailable("Local AI is unavailable. Start Ollama and pull the configured model, or continue without AI.") from exc
+ except (httpx.HTTPError,ValueError) as exc: raise AIUnavailable("The configured AI service is unavailable. Check LAZ_HELPER_OLLAMA_URL, network access, and model availability, or continue without AI.") from exc
  try: rec=AIRecommendation.model_validate_json(raw)
- except (ValidationError,ValueError) as exc: raise AIUnavailable("The local model returned invalid output. Retry or inspect without AI.") from exc
+ except (ValidationError,ValueError) as exc: raise AIUnavailable("The configured AI model returned invalid output. Retry or inspect without AI.") from exc
  rec.suggested_filename=safe_filename(rec.suggested_filename,original_name); rec.suggested_category=safe_category(rec.suggested_category)
  rec.evidence=[str(v)[:180] for v in rec.evidence[:5]]; rec.limitations=[str(v)[:180] for v in rec.limitations[:5]]; rec.needs_review=True
  return rec

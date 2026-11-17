@@ -1,5 +1,7 @@
 "use strict";
 const $ = s => document.querySelector(s);
+const TOKEN_STORAGE_KEY = "laz-helper-api-token";
+let apiToken = sessionStorage.getItem(TOKEN_STORAGE_KEY) || "";
 function el(t, a, ...k) {
   const e = document.createElement(t);
   for (const [x, v] of Object.entries(a || {})) {
@@ -12,8 +14,15 @@ function el(t, a, ...k) {
 }
 async function api(p, o) {
   let r;
+  const headers = {};
+  if (apiToken) headers.Authorization = "Bearer " + apiToken;
+  if (o && o.body !== undefined) headers["Content-Type"] = "application/json";
   try {
-    r = await fetch(p, o ? { method: o.method, headers: { "Content-Type": "application/json" }, body: o.body ? JSON.stringify(o.body) : undefined } : undefined);
+    r = await fetch(p, {
+      method: o && o.method ? o.method : "GET",
+      headers,
+      body: o && o.body !== undefined ? JSON.stringify(o.body) : undefined
+    });
   } catch { throw new Error("Couldn't reach Laz Helper. Check your connection and try again."); }
   let d = null;
   try { d = await r.json(); } catch {}
@@ -132,7 +141,13 @@ async function applyMoves() {
     S.plan = S.plan.filter(x => !done.has(x.source));
     done.forEach(d => S.sel.delete(d));
     S.journal = null;
-    toast(r.completed.length + (r.completed.length === 1 ? " file moved. " : " files moved. ") + "Nothing was deleted." + (r.failed.length ? " " + r.failed.length + " couldn't be moved: " + r.failed[0].reason : ""));
+    const pending = r.pending_recovery || [];
+    toast(
+      r.completed.length + (r.completed.length === 1 ? " file moved. " : " files moved. ") +
+      "Nothing was deleted." +
+      (r.failed.length ? " " + r.failed.length + " couldn't be moved: " + r.failed[0].reason : "") +
+      (pending.length ? " " + pending.length + " move(s) need journal recovery; check History." : "")
+    );
   } catch (e) { toast(e.message); }
   review();
 }
@@ -202,7 +217,11 @@ async function history() {
   if (!S.journal.length) out.push(el("section", { class: "card empty" }, el("h2", {}, "No moves yet"), el("p", { class: "mute" }, "Approved moves will appear here so you can undo them.")));
   S.journal.forEach(o => out.push(el("section", { class: "card" }, el("div", { class: "between" },
     el("div", { style: "min-width:0" }, el("b", { class: "nm", style: "display:block" }, base(o.source_path)), el("p", { class: "mute small" }, (o.status === "undone" ? "Restored" : "Moved") + " · " + dir(o.destination_path || "") + " · " + when(o.undone_at || o.created_at))),
-    o.status === "applied" ? el("button", { style: "flex:none", onclick: async () => { try { await api("/api/journal/" + o.id + "/undo", { method: "POST" }); toast("Put back where it was."); S.journal = null; S.scanned = false; history(); } catch (e) { toast(e.message); } } }, "Undo") : el("span", { class: "badge" }, "Restored")))));
+    o.status === "applied"
+      ? el("button", { style: "flex:none", onclick: async () => { try { await api("/api/journal/" + o.id + "/undo", { method: "POST" }); toast("Put back where it was."); S.journal = null; S.scanned = false; history(); } catch (e) { toast(e.message); } } }, "Undo")
+      : el("span", { class: "badge" },
+          o.status === "undone" ? "Restored" :
+          (o.status === "pending" || o.status === "undoing") ? "Needs recovery" : "Not completed")))));
   v.replaceChildren(...out);
 }
 
@@ -221,7 +240,8 @@ async function settings() {
       const rules = {};
       rows.querySelectorAll(".cat").forEach(r => { const n = r.querySelector(".cn").value.trim(), e = r.querySelector(".ce").value.split(/[,\s]+/).filter(Boolean); if (n) rules[n] = e; });
       try { S.prefs = await api("/api/preferences", { method: "PUT", body: { category_rules: rules, include_date_in_plan: date.classList.contains("on") } }); S.rules = JSON.parse(JSON.stringify(S.prefs.category_rules)); S.scanned = false; toast("Settings saved. Scan again to see new suggestions."); settings(); } catch (e) { toast(e.message); }
-    } }, "Save settings"));
+    } }, "Save settings"),
+    el("button", { onclick: lockWorkspace }, "Lock Laz Helper"));
 }
 
 function go(v) {
@@ -235,8 +255,83 @@ document.querySelectorAll("#nav button").forEach(b => b.addEventListener("click"
 $("#sheet").addEventListener("click", e => { if (e.target.id === "sheet") closeSheet(); });
 document.addEventListener("keydown", e => { if (e.key === "Escape") closeSheet(); });
 
-(async function init() {
+function lockWorkspace() {
+  sessionStorage.removeItem(TOKEN_STORAGE_KEY);
+  apiToken = "";
+
+  // Clear rendered document details as well as in-memory state. Hiding the
+  // workspace alone would leave extracted text visible in the DOM/devtools.
+  document.querySelectorAll("#main .view").forEach(view => view.replaceChildren());
+  $("#panel").replaceChildren();
+  $("#sheet").classList.remove("on");
+  $("#toast").textContent = "";
+  $("#toast").classList.remove("on");
+
+  S.files = [];
+  S.plan = [];
+  S.sel.clear();
+  S.dups = null;
+  S.queue = [];
+  S.journal = null;
+  S.ins = null;
+  S.prefs = null;
+  S.rules = {};
+  S.sloth = null;
+  S.scanned = false;
+  S.view = "home";
+  S.busy = false;
+  showAuth("Laz Helper is locked.");
+}
+
+function showAuth(message = "") {
+  $(".shell").hidden = true;
+  $("#authGate").hidden = false;
+  const error = $("#authError");
+  error.textContent = message;
+  error.hidden = !message;
+  $("#apiToken").focus();
+}
+
+async function startWorkspace() {
+  $(".shell").hidden = false;
+  $("#authGate").hidden = true;
   home();
-  await Promise.all([loadIns(), api("/api/sloth-mode").then(s => { S.sloth = s; }).catch(() => {})]);
+  await Promise.all([
+    loadIns(),
+    api("/api/sloth-mode").then(s => { S.sloth = s; }).catch(() => {})
+  ]);
   if (S.view === "home") home();
+}
+
+$("#authForm").addEventListener("submit", async event => {
+  event.preventDefault();
+  const input = $("#apiToken");
+  const token = input.value.trim();
+  if (!token) return showAuth("Enter your access token.");
+  apiToken = token;
+  try {
+    await api("/api/config");
+    sessionStorage.setItem(TOKEN_STORAGE_KEY, token);
+    input.value = "";
+    await startWorkspace();
+  } catch (error) {
+    apiToken = "";
+    showAuth(
+      error.message.includes("LAZ_HELPER_API_TOKEN")
+        ? "The server has no access token configured. Set LAZ_HELPER_API_TOKEN first."
+        : "That access token was not accepted. Check it and try again."
+    );
+  }
+});
+
+(async function init() {
+  if (!apiToken) return showAuth();
+  try {
+    await api("/api/config");
+    await startWorkspace();
+  } catch {
+    apiToken = "";
+    sessionStorage.removeItem(TOKEN_STORAGE_KEY);
+    showAuth("Your access token is missing or no longer valid. Enter it again.");
+  }
 })();
