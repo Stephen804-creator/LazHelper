@@ -128,3 +128,27 @@ def test_workspace_api_fails_closed_without_a_configured_token(monkeypatch):
         response = client.get("/api/config")
         assert response.status_code == 503
         assert "LAZ_HELPER_API_TOKEN" in response.json()["detail"]
+
+
+@pytest.mark.skipif(os.name == "nt", reason="POSIX named pipes are not available on Windows.")
+def test_open_workspace_file_rejects_fifo_without_blocking(tmp_path, monkeypatch):
+    root = tmp_path / "workspace"
+    root.mkdir()
+    os.mkfifo(root / "pipe.txt")
+    monkeypatch.setattr(config, "ALLOWED_ROOT", root)
+
+    with pytest.raises(UnsafePath, match="regular files"):
+        with open_workspace_file("pipe.txt"):
+            pass
+
+
+def test_workspace_api_rejects_example_placeholder_token(monkeypatch):
+    from fastapi.testclient import TestClient
+    from app.main import app
+
+    # This example token is exactly 32 characters, so length checks alone
+    # would incorrectly accept the repository's own placeholder value.
+    monkeypatch.setattr(config, "API_TOKEN", "replace-with-a-long-random-token")
+    with TestClient(app) as client:
+        response = client.get("/api/config")
+        assert response.status_code == 503
