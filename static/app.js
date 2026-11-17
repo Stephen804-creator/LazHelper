@@ -258,6 +258,15 @@ document.addEventListener("keydown", e => { if (e.key === "Escape") closeSheet()
 function lockWorkspace() {
   sessionStorage.removeItem(TOKEN_STORAGE_KEY);
   apiToken = "";
+
+  // Clear rendered document details as well as in-memory state. Hiding the
+  // workspace alone would leave extracted text visible in the DOM/devtools.
+  document.querySelectorAll("#main .view").forEach(view => view.replaceChildren());
+  $("#panel").replaceChildren();
+  $("#sheet").classList.remove("on");
+  $("#toast").textContent = "";
+  $("#toast").classList.remove("on");
+
   S.files = [];
   S.plan = [];
   S.sel.clear();
