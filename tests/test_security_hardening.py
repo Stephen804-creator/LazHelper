@@ -115,6 +115,7 @@ def test_workspace_api_requires_bearer_token(monkeypatch):
             headers={"Authorization": "Bearer " + "a" * 40}
         )
         assert response.status_code == 200
+        assert response.headers["cache-control"] == "no-store"
 
 
 
