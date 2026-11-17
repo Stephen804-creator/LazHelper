@@ -77,7 +77,13 @@ async def require_api_token(request: Request, call_next):
                 headers={"WWW-Authenticate": "Bearer"}
             )
 
-    return await call_next(request)
+    response = await call_next(request)
+    if request.url.path.startswith("/api/"):
+        # Workspace metadata and extracted document text must not be cached by
+        # browsers or shared intermediaries.
+        response.headers["Cache-Control"] = "no-store"
+        response.headers["Pragma"] = "no-cache"
+    return response
 
 class PlanRequest(BaseModel):
     relative_paths: list[str] = Field(min_length=1, max_length=500)
