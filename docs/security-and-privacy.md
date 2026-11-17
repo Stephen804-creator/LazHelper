@@ -7,7 +7,8 @@ Laz Helper protects a configured workspace and requires explicit approval before
 - All `/api/*` routes except `/api/health` require a bearer token.
 - Configure `LAZ_HELPER_API_TOKEN` with a random value of at least 32 characters.
 - The Render blueprint generates a token. Retrieve it from the Render service environment settings and enter it in the browser unlock screen.
-- The browser keeps the token in session storage for the current tab session and sends it in the Authorization header. The Lock action clears it.
+- The browser keeps the token in session storage for the current tab session and sends it in the Authorization header. The Lock action clears the token, in-memory workspace state, and rendered document details from the page.
+- Workspace API responses use `Cache-Control: no-store`; the application also sets a restrictive Content Security Policy and baseline browser security headers.
 - Do not share the token or expose it in source control, URLs, screenshots, or logs. Use HTTPS for remote access.
 
 ## Workspace boundaries
